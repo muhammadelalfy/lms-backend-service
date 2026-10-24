@@ -30,7 +30,7 @@
     function firstError(body) {
         var errors = body && body.errors;
         if (errors) { var key = Object.keys(errors)[0]; if (key) return errors[key][0]; }
-        return (body && body.message) || 'تعذّر إنشاء الأكاديمية. حاول مرة أخرى.';
+        return (body && body.message) || 'تعذّر إنشاء المركز. حاول مرة أخرى.';
     }
 
     form.addEventListener('submit', function (e) {
@@ -40,7 +40,7 @@
         if (f.password.value.length < 8) { say('كلمة المرور 8 أحرف على الأقل.', 'error'); f.password.focus(); return; }
 
         busy(true);
-        say('جارٍ تجهيز أكاديميتك… قد يستغرق ذلك لحظات.');
+        say('جارٍ تجهيز مركزك… قد يستغرق ذلك لحظات.');
         fetch('/api/signup', {
             method: 'POST',
             headers: { Accept: 'application/json', 'Content-Type': 'application/json' },

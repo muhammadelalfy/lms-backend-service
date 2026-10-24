@@ -396,13 +396,13 @@
         <div class="wrap">
             <div class="sec-head">
                 <div class="num">05</div>
-                <h2>باقة على مقاس أكاديميتك</h2>
+                <h2>باقة على مقاس مركزك</h2>
             </div>
             <p class="price-lead">ابدأ بتجربة مجانية، ثم اختر الباقة بحسب عدد طلابك. بدون بطاقة بنكية للبدء.</p>
             <div class="grid g3 pricing">
                 <article class="card plan">
                     <h3>مدرس فردي</h3>
-                    <p>أكاديمية باسمك لمجموعة طلابك: دورات، حصص، اختبارات، وأولياء أمور.</p>
+                    <p>مركز باسمك لمجموعة طلابك: دورات، حصص، اختبارات، وأولياء أمور.</p>
                     <ul><li>دورات ودروس بفيديو (يوتيوب)</li><li>اختبارات وتصحيح</li><li>أكواد دخول للطلاب</li></ul>
                     <button type="button" class="btn btn-navy" data-open-signup="solo">ابدأ تجربتك المجانية</button>
                 </article>
@@ -496,16 +496,16 @@
         <form class="school-card signup-card" id="signup-form" novalidate>
             <button type="button" class="school-x" data-close-signup aria-label="إغلاق">&times;</button>
             <h2 id="signup-title">ابدأ تجربتك المجانية</h2>
-            <p class="school-help">تجهّز أكاديميتك في دقيقة. تقدر تغيّر كل شيء بعدها.</p>
+            <p class="school-help">تجهّز مركزك في دقيقة. تقدر تغيّر كل شيء بعدها.</p>
             <label for="su-kind">نوع النشاط</label>
             <select id="su-kind" name="kind" class="su-input">
                 <option value="center">سنتر دروس</option>
                 <option value="group">مجموعة مدرسين</option>
                 <option value="solo">مدرس فردي</option>
             </select>
-            <label for="su-name">اسم الأكاديمية</label>
+            <label for="su-name">اسم المركز</label>
             <input id="su-name" name="name" class="su-input" maxlength="120" required autocomplete="organization">
-            <label for="su-slug">عنوان الأكاديمية</label>
+            <label for="su-slug">عنوان المركز</label>
             <div class="school-field">
                 <input id="su-slug" name="slug" dir="ltr" autocapitalize="none" spellcheck="false" maxlength="40" required placeholder="alnour">
                 <span dir="ltr" aria-hidden="true">.{{ $base }}</span>
@@ -518,7 +518,7 @@
             <input id="su-pass" name="password" type="password" dir="ltr" class="su-input" minlength="8" maxlength="100" required autocomplete="new-password">
             <input type="text" name="website" class="su-trap" tabindex="-1" autocomplete="off" aria-hidden="true">
             <p class="school-status" id="signup-status" role="status" aria-live="polite"></p>
-            <button class="btn btn-gold school-go" type="submit">افتح أكاديميتي</button>
+            <button class="btn btn-gold school-go" type="submit">افتح مركزي</button>
         </form>
     </dialog>
 @endunless

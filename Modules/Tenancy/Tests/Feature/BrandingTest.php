@@ -21,12 +21,12 @@ class BrandingTest extends TestCase
     {
         Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
 
-        $this->putJson('/api/branding', ['name' => 'أكاديمية النور', 'brand_color' => '#1F4E8C', 'logo_url' => 'https://cdn.example/logo.png'])
+        $this->putJson('/api/branding', ['name' => 'مركز النور', 'brand_color' => '#1F4E8C', 'logo_url' => 'https://cdn.example/logo.png'])
             ->assertOk()->assertJsonPath('brand_color', '#1F4E8C');
 
         $this->app['auth']->forgetGuards();
         $this->getJson('/api/branding')->assertOk()
-            ->assertJsonPath('name', 'أكاديمية النور')
+            ->assertJsonPath('name', 'مركز النور')
             ->assertJsonPath('logo_url', 'https://cdn.example/logo.png');
     }
 
