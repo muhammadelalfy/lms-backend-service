@@ -37,7 +37,7 @@ class SchoolMessageController extends Controller
         // ADR 0002: a whole-school broadcast is admin-only; a teacher's
         // chosen group or students must be within the groups they teach.
         if ($all) {
-            abort_unless($user->isAnyRole('admin'), 403, 'إرسال رسالة لكل الأكاديمية متاح للمشرف فقط.');
+            abort_unless($user->isAnyRole('admin'), 403, 'إرسال رسالة لكل المركز متاح للمشرف فقط.');
         }
         if (! $user->isAnyRole('admin') && filled($data['group'] ?? null)) {
             abort_if(

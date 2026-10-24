@@ -34,7 +34,7 @@ class StudentController extends Controller
         $limit = tenant()?->studentLimit();
         if ($limit !== null && Student::query()->count() >= $limit) {
             return response()->json([
-                'message' => "وصلت أكاديميتك إلى الحد الأقصى للطلاب في باقتها ({$limit}). رقِّ الباقة لإضافة المزيد.",
+                'message' => "وصل مركزك إلى الحد الأقصى للطلاب في باقتها ({$limit}). رقِّ الباقة لإضافة المزيد.",
                 'code' => 'plan_limit',
                 'limit' => $limit,
             ], 402);

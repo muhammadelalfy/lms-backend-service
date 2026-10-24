@@ -63,7 +63,7 @@
         if (!CODE.test(code)) { say('الرمز يتكوّن من حروف إنجليزية صغيرة وأرقام وشرطة فقط.', 'error'); input.focus(); return; }
 
         busy(true);
-        say('جارٍ البحث عن أكاديميتك…');
+        say('جارٍ البحث عن مركزك…');
         fetch('/api/school-lookup?code=' + encodeURIComponent(code), { headers: { Accept: 'application/json' } })
             .then(function (res) {
                 if (res.status === 429) { throw { kind: 'limit' }; }
@@ -78,7 +78,7 @@
             })
             .catch(function (err) {
                 busy(false);
-                if (err && err.kind === 'none') say('لم نجد أكاديمية بهذا الرمز. تأكد من الرمز الذي أرسلته لك أكاديميتك.', 'error');
+                if (err && err.kind === 'none') say('لم نجد مركز بهذا الرمز. تأكد من الرمز الذي أرسلته لك مركزك.', 'error');
                 else if (err && err.kind === 'limit') say('محاولات كثيرة. انتظر دقيقة ثم حاول مرة أخرى.', 'error');
                 else say('تعذّر الاتصال. تحقق من الإنترنت وحاول مرة أخرى.', 'error');
                 input.focus();

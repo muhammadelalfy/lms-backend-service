@@ -69,10 +69,10 @@ class School extends BaseTenant implements TenantWithDatabase
     public function lockedReason(): ?string
     {
         if ($this->status !== self::ACTIVE) {
-            return 'تم إيقاف حساب الأكاديمية. تواصل مع إدارة المنصة.';
+            return 'تم إيقاف حساب المركز. تواصل مع إدارة المنصة.';
         }
 
-        return $this->trialHasEnded() ? 'انتهت الفترة التجريبية للأكاديمية. اختر باقة للمتابعة.' : null;
+        return $this->trialHasEnded() ? 'انتهت الفترة التجريبية للمركز. اختر باقة للمتابعة.' : null;
     }
 
     /** How many students the school may have: its own limit, else its plan's; null = unlimited. */

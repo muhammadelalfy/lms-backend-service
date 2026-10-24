@@ -140,7 +140,7 @@ class PluginStoreTest extends TestCase
 
         $this->getJson('/api/_test/attendance-insights-report')
             ->assertForbidden()
-            ->assertJsonPath('message', 'هذه الإضافة غير مفعّلة لأكاديميتك.');
+            ->assertJsonPath('message', 'هذه الإضافة غير مفعّلة لمركزك.');
 
         $plugin = $this->createPlugin();
         $admin->pluginPurchases()->create(['plugin_product_id' => $plugin->id, 'status' => 'completed', 'purchased_at' => now()]);

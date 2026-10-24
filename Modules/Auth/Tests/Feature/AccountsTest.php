@@ -51,7 +51,7 @@ class AccountsTest extends TestCase
         $this->assertSame(['teacher', 'pending'], [$teacher->role, $teacher->status]);
         $this->assertSame('pending', $teacher->accountState());
         $this->postJson('/api/auth/teacher/login', ['email' => 'ahmed@school.test', 'password' => self::PASSWORD])
-            ->assertForbidden()->assertJsonPath('message', 'حسابك قيد المراجعة. ستتمكن من الدخول بعد موافقة إدارة الأكاديمية.');
+            ->assertForbidden()->assertJsonPath('message', 'حسابك قيد المراجعة. ستتمكن من الدخول بعد موافقة إدارة المركز.');
         $this->postJson('/api/auth/login', ['email' => 'ahmed@school.test', 'password' => self::PASSWORD])->assertForbidden();
     }
 
@@ -194,7 +194,7 @@ class AccountsTest extends TestCase
         // `third` is now the only usable admin; another admin cannot demote them while it is the last.
         $fourth = $this->admin(['disabled_at' => now()]);
         Sanctum::actingAs($fourth);
-        $this->patchJson("/api/users/{$third->id}/role", ['role' => 'teacher'])->assertUnprocessable()->assertJsonPath('message', 'لا يمكن إيقاف آخر مشرف نشط في الأكاديمية.');
+        $this->patchJson("/api/users/{$third->id}/role", ['role' => 'teacher'])->assertUnprocessable()->assertJsonPath('message', 'لا يمكن إيقاف آخر مشرف نشط في المركز.');
         $this->assertSame('admin', $third->fresh()->role);
     }
 

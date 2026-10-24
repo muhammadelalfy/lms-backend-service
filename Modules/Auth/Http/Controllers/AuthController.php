@@ -102,7 +102,7 @@ class AuthController extends Controller
 
         $user = $query->first();
         abort_unless($user && Hash::check($data['password'], $user->password), 422, 'بيانات الدخول غير صحيحة لهذا النوع من الحسابات.');
-        abort_if($user->isPending(), 403, 'حسابك قيد المراجعة. ستتمكن من الدخول بعد موافقة إدارة الأكاديمية.');
+        abort_if($user->isPending(), 403, 'حسابك قيد المراجعة. ستتمكن من الدخول بعد موافقة إدارة المركز.');
         abort_unless($user->isUsable(), 403, 'هذا الحساب موقوف أو انتهت صلاحيته. تواصل مع الإدارة.');
 
         return $this->tokenResponse($user, $role);

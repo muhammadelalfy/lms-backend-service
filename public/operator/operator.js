@@ -46,8 +46,8 @@
             // Laravel's default validation text is English; say what is wrong in Arabic for the fields on this page.
             var arabic = {
                 domain: 'صيغة النطاق غير صحيحة. مثال: school.example.com',
-                slug: 'كود الأكاديمية غير صالح أو مستخدم من قبل.',
-                name: 'اسم الأكاديمية مطلوب (حتى 120 حرفاً).',
+                slug: 'كود المركز غير صالح أو مستخدم من قبل.',
+                name: 'اسم المركز مطلوب (حتى 120 حرفاً).',
                 plan: 'الباقة غير صحيحة.',
                 max_students: 'حد الطلاب عدد صحيح أكبر من صفر.',
                 trial_ends_at: 'تاريخ نهاية التجربة غير صحيح.',
@@ -144,7 +144,7 @@
         if (!rows.length) return;
 
         table.appendChild(el('div', { class: 'row head', role: 'row' },
-            el('div', { text: 'الأكاديمية' }), el('div', { text: 'الباقة' }), el('div', { text: 'الحالة' }),
+            el('div', { text: 'المركز' }), el('div', { text: 'الباقة' }), el('div', { text: 'الحالة' }),
             el('div', { text: 'الطلاب' }), el('div', { text: 'العناوين' }), el('div', { text: '' })));
         rows.forEach(function (school) { table.appendChild(row(school)); });
     }
@@ -315,12 +315,12 @@
     function toggleStatus(school, status) {
         var suspending = status === 'suspended';
         var proceed = suspending
-            ? confirmBox('إيقاف ' + school.name, 'لن يستطيع أحد من الأكاديمية الدخول حتى تعيد تفعيلها. بياناتها تبقى كما هي.', 'إيقاف الأكاديمية')
+            ? confirmBox('إيقاف ' + school.name, 'لن يستطيع أحد من المركز الدخول حتى تعيد تفعيلها. بياناتها تبقى كما هي.', 'إيقاف المركز')
             : Promise.resolve(true);
         proceed.then(function (ok) {
             if (!ok) return;
             return api('/schools/' + encodeURIComponent(school.id), { method: 'PATCH', body: { status: status } })
-                .then(function () { toast(suspending ? 'تم إيقاف الأكاديمية.' : 'تم تفعيل الأكاديمية.'); return load(); })
+                .then(function () { toast(suspending ? 'تم إيقاف المركز.' : 'تم تفعيل المركز.'); return load(); })
                 .catch(function (err) { if (err.status === 401) signOut(err.message); else toast(err.message, true); });
         });
     }
@@ -359,7 +359,7 @@
         var button = $('#x-go');
         busy(button, true);
         api('/schools/' + encodeURIComponent(deleting.id) + '?confirm=' + encodeURIComponent(deleting.id), { method: 'DELETE' })
-            .then(function () { busy(button, false); closeDialog(deleteDlg); toast('تم حذف الأكاديمية.'); return load(); })
+            .then(function () { busy(button, false); closeDialog(deleteDlg); toast('تم حذف المركز.'); return load(); })
             .catch(function (err) { busy(button, false); fail(deleteDlg, err); });
     });
 

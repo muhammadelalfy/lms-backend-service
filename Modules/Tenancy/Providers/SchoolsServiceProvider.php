@@ -39,7 +39,7 @@ final class SchoolsServiceProvider extends ServiceProvider
         $this->prioritiseTenancyMiddleware();
 
         // An address that belongs to no school is answered, not a server error.
-        InitializeTenancyByDomain::$onFail = fn () => response()->json(['message' => 'الأكاديمية غير موجودة. تحقق من عنوان أكاديميتك.', 'code' => 'unknown_school'], 404);
+        InitializeTenancyByDomain::$onFail = fn () => response()->json(['message' => 'المركز غير موجود. تحقق من عنوان مركزك.', 'code' => 'unknown_school'], 404);
 
         // A school's own payment, SMS and WhatsApp settings replace the platform's while it is in use.
         TenantConfig::$storageToConfigMap = config('schools.settings', []);

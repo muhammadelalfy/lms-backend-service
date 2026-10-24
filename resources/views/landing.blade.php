@@ -3,15 +3,15 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('landing.name') }} — منصة إدارة الأكاديميات والتعليم</title>
-    <meta name="description" content="مُدرّسى منصة عربية لإدارة الأكاديميات والسناتر: الحضور بالـQR والوجه، الاختبارات، المحادثات والمكالمات، المدفوعات والتقارير، وتطبيق للجوال.">
+    <title>{{ config('landing.name') }} — منصة إدارة المراكز والتعليم</title>
+    <meta name="description" content="مُدرّسى منصة عربية لإدارة المراكز والسناتر: الحضور بالـQR والوجه، الاختبارات، المحادثات والمكالمات، المدفوعات والتقارير، وتطبيق للجوال.">
     <meta name="theme-color" content="#0b1d3a">
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('brand/favicon.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('brand/favicon-32.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('brand/apple-touch-icon.png') }}">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="{{ config('landing.name') }} — منصة إدارة الأكاديميات والتعليم">
-    <meta property="og:description" content="لكل معلّم وطالب غاية — منصة عربية لإدارة الأكاديميات والسناتر.">
+    <meta property="og:title" content="{{ config('landing.name') }} — منصة إدارة المراكز والتعليم">
+    <meta property="og:description" content="لكل معلّم وطالب غاية — منصة عربية لإدارة المراكز والسناتر.">
     <meta property="og:image" content="{{ asset('brand/og-image.png') }}">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -246,10 +246,10 @@
         <div class="wrap hero-grid">
             <div>
                 <span class="eyebrow">منصة تعليمية عربية متكاملة</span>
-                <h1>أدِر أكاديميتك من مكان واحد، <em>بسهولة وثقة</em></h1>
+                <h1>أدِر مركزك من مكان واحد، <em>بسهولة وثقة</em></h1>
                 <p class="lead">
                     {{ $name }} تجمع الحضور والاختبارات والمحادثات والمدفوعات والتقارير في منصة واحدة
-                    لكل أكاديمية أو سنتر، مع تطبيق جوال للإدارة والمعلمين والطلاب وأولياء الأمور.
+                    لكل مركز أو سنتر، مع تطبيق جوال للإدارة والمعلمين والطلاب وأولياء الأمور.
                 </p>
                 <div class="cta">
                     @include('landing._enter', ['class' => 'btn btn-gold', 'label' => 'ادخل المنصة'])
@@ -276,11 +276,11 @@
             <div class="sec-head">
                 <div class="num">01</div>
                 <h2>منصة {{ $name }}</h2>
-                <p>لكل أكاديمية نطاقها وبياناتها المنفصلة، وتحكّم كامل في الصلاحيات والباقات والإعدادات.</p>
+                <p>لكل مركز نطاقها وبياناتها المنفصلة، وتحكّم كامل في الصلاحيات والباقات والإعدادات.</p>
             </div>
             <div class="grid g3">
-                <article class="card"><div class="badge">🏫</div><h3>أكاديميات كثيرة، منصة واحدة</h3><p>قاعدة بيانات ونطاق فرعي لكل أكاديمية، فتبقى بياناتها معزولة وآمنة.</p></article>
-                <article class="card"><div class="badge">🧩</div><h3>وحدات تُفعَّل حسب الحاجة</h3><p>اختر الوحدات التي تحتاجها أكاديميتك وفعّلها أو أوقفها في أي وقت.</p></article>
+                <article class="card"><div class="badge">🏫</div><h3>مراكز كثيرة، منصة واحدة</h3><p>قاعدة بيانات ونطاق فرعي لكل مركز، فتبقى بياناتها معزولة وآمنة.</p></article>
+                <article class="card"><div class="badge">🧩</div><h3>وحدات تُفعَّل حسب الحاجة</h3><p>اختر الوحدات التي تحتاجها مركزك وفعّلها أو أوقفها في أي وقت.</p></article>
                 <article class="card"><div class="badge">🔐</div><h3>أدوار وصلاحيات</h3><p>إدارة ومعلمون وطلاب وأولياء أمور، لكلٍّ ما يحتاجه فقط.</p></article>
             </div>
         </div>
@@ -291,7 +291,7 @@
             <div class="sec-head">
                 <div class="num">02</div>
                 <h2>تطبيق {{ $name }}</h2>
-                <p>تطبيق عربي من اليمين إلى اليسار لنظامي أندرويد وiOS، يعمل مع أكاديميتك برمز الأكاديمية.</p>
+                <p>تطبيق عربي من اليمين إلى اليسار لنظامي أندرويد وiOS، يعمل مع مركزك برمز المركز.</p>
             </div>
             <div class="split">
                 <div class="panel navy">
@@ -322,7 +322,7 @@
         <div class="wrap">
             <div class="sec-head">
                 <div class="num">03</div>
-                <h2>مزايا تغطي يوم الأكاديمية</h2>
+                <h2>مزايا تغطي يوم المركز</h2>
             </div>
             <div class="grid g4">
                 <article class="card"><div class="badge">✅</div><h3>الحضور</h3><p>QR ووجه وغياب تلقائي مع إشعار ولي الأمر.</p></article>
@@ -330,7 +330,7 @@
                 <article class="card"><div class="badge">💬</div><h3>التواصل</h3><p>محادثات ومكالمات وحصص مباشرة.</p></article>
                 <article class="card"><div class="badge">💳</div><h3>المدفوعات</h3><p>رسوم وأقساط وسداد إلكتروني وإيصالات.</p></article>
                 <article class="card"><div class="badge">📊</div><h3>التقارير</h3><p>لوحات متابعة وتقارير للإدارة وأولياء الأمور.</p></article>
-                <article class="card"><div class="badge">🔔</div><h3>الإشعارات</h3><p>دفع وSMS وواتساب بحسب إعدادات كل أكاديمية.</p></article>
+                <article class="card"><div class="badge">🔔</div><h3>الإشعارات</h3><p>دفع وSMS وواتساب بحسب إعدادات كل مركز.</p></article>
                 <article class="card"><div class="badge">👥</div><h3>المجموعات</h3><p>فصول ومجموعات وجداول ومواعيد.</p></article>
                 <article class="card"><div class="badge">📴</div><h3>الوضع المحلي</h3><p>جرّب التطبيق كاملاً ببيانات تجريبية دون خادم.</p></article>
             </div>
@@ -372,9 +372,9 @@
                 <h2>كيف تبدأ</h2>
             </div>
             <div class="grid g3">
-                <article class="card step"><div class="n">1</div><h3>سجّل أكاديميتك</h3><p>نفتح لأكاديميتك مساحتها الخاصة ونعدّ الباقة والوحدات.</p></article>
+                <article class="card step"><div class="n">1</div><h3>سجّل مركزك</h3><p>نفتح لمركزك مساحتها الخاصة ونعدّ الباقة والوحدات.</p></article>
                 <article class="card step"><div class="n">2</div><h3>أضف الطلاب والمعلمين</h3><p>ارفع ملف Excel أو أضِف الحسابات يدوياً.</p></article>
-                <article class="card step"><div class="n">3</div><h3>حمّل التطبيق</h3><p>أدخل رمز الأكاديمية وسجّل الدخول وابدأ العمل.</p></article>
+                <article class="card step"><div class="n">3</div><h3>حمّل التطبيق</h3><p>أدخل رمز المركز وسجّل الدخول وابدأ العمل.</p></article>
             </div>
         </div>
     </section>
@@ -392,7 +392,7 @@
         <div class="wrap">
             <div class="download">
                 <h2>حمّل تطبيق {{ $name }}</h2>
-                <p>أدخل رمز أكاديميتك بعد التثبيت وسجّل الدخول بحسابك.</p>
+                <p>أدخل رمز مركزك بعد التثبيت وسجّل الدخول بحسابك.</p>
                 <div class="cta">
                     @if ($android)
                         <a class="btn btn-navy" href="{{ $android }}" rel="noopener">أندرويد</a>
@@ -416,7 +416,7 @@
         <div class="cols">
             <div>
                 <img class="brand-logo-footer" src="{{ asset('brand/mudarisy_logo_reversed.png') }}" alt="{{ $name }} — مُدرّسى" width="240" height="180">
-                <p>منصة عربية لإدارة الأكاديميات والسناتر ومراكز التعليم.</p>
+                <p>منصة عربية لإدارة المراكز والسناتر ومراكز التعليم.</p>
             </div>
             <div>
                 <h4>الصفحات</h4>
@@ -444,9 +444,9 @@
     <dialog class="school-dialog" id="school-dialog" aria-labelledby="school-title">
         <form class="school-card" id="school-form" novalidate>
             <button type="button" class="school-x" data-close-school aria-label="إغلاق">&times;</button>
-            <h2 id="school-title">ادخل إلى أكاديميتك</h2>
-            <p class="school-help">اكتب رمز أكاديميتك. هو أول جزء من عنوانها، مثل <b dir="ltr">alnour</b> في <span dir="ltr">alnour.{{ $base }}</span>.</p>
-            <label for="school-code">رمز الأكاديمية</label>
+            <h2 id="school-title">ادخل إلى مركزك</h2>
+            <p class="school-help">اكتب رمز مركزك. هو أول جزء من عنوانها، مثل <b dir="ltr">alnour</b> في <span dir="ltr">alnour.{{ $base }}</span>.</p>
+            <label for="school-code">رمز المركز</label>
             <div class="school-field">
                 <input id="school-code" name="code" dir="ltr" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="41" required placeholder="alnour">
                 <span dir="ltr" aria-hidden="true">.{{ $base }}</span>
