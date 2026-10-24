@@ -14,7 +14,7 @@ use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
  *
  * @property string $id the subdomain, e.g. "alnour"
  * @property string $name
- * @property string $plan trial | basic | pro | enterprise
+ * @property string $plan t1..t8, or a legacy plan: trial | basic | pro | enterprise
  * @property string $status active | suspended
  * @property Carbon|null $trial_ends_at
  * @property int|null $max_students
@@ -63,26 +63,55 @@ class School extends BaseTenant implements TenantWithDatabase
         return $this->status === self::ACTIVE && ! $this->trialHasEnded();
     }
 
-    /** A trial that ran out behaves like a suspension until the school picks a plan. */
+    /** A trial (any school with an end date) that ran out behaves like a suspension until a plan is chosen. A paid school has no end date. */
     public function trialHasEnded(): bool
     {
-        return $this->plan === 'trial' && $this->trial_ends_at !== null && $this->trial_ends_at->isPast();
+        return $this->trial_ends_at !== null && $this->trial_ends_at->isPast();
     }
 
     /** Why the school cannot be used, in words for the person, or null when it can. */
     public function lockedReason(): ?string
     {
         if ($this->status !== self::ACTIVE) {
-            return 'تم إيقاف حساب المدرسة. تواصل مع إدارة المنصة.';
+            return 'تم إيقاف حساب المركز. تواصل مع إدارة المنصة.';
         }
 
-        return $this->trialHasEnded() ? 'انتهت الفترة التجريبية للمدرسة. اختر باقة للمتابعة.' : null;
+        return $this->trialHasEnded() ? 'انتهت الفترة التجريبية للمركز. اختر باقة للمتابعة.' : null;
     }
 
     /** How many students the school may have: its own limit, else its plan's; null = unlimited. */
     public function studentLimit(): ?int
     {
-        return $this->max_students ?? config("schools.plans.{$this->plan}.max_students");
+        return $this->limit('students');
+    }
+
+    /**
+     * One cap of the school, null = unlimited. Order: the `max_students` column (students only), the
+     * operator's override in `data.limits`, then the plan's own limit.
+     */
+    public function limit(string $key): ?int
+    {
+        if ($key === 'students' && $this->max_students !== null) {
+            return $this->max_students;
+        }
+        $overrides = (array) ($this->getAttributes()['limits'] ?? []);
+        if (array_key_exists($key, $overrides)) {
+            return $overrides[$key] === null ? null : (int) $overrides[$key];
+        }
+        $value = config("schools.plans.{$this->plan}.limits.{$key}");
+
+        return $value === null ? null : (int) $value;
+    }
+
+    /** @return array<string, int|null> every cap of the school */
+    public function limits(): array
+    {
+        $keys = array_unique(array_merge(
+            array_keys((array) config("schools.plans.{$this->plan}.limits")),
+            array_keys((array) ($this->getAttributes()['limits'] ?? [])),
+        ));
+
+        return collect($keys)->mapWithKeys(fn (string $key) => [$key => $this->limit($key)])->all();
     }
 
     /** The settings the school may override (payment, SMS, WhatsApp). */

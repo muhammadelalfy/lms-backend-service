@@ -16,7 +16,7 @@ use Throwable;
 class SchoolProvisioner
 {
     /**
-     * @param  array{slug: string, name: string, plan?: string, admin: array{name: string, email: string, password: string}, demo?: bool, max_students?: int|null}  $data
+     * @param  array{slug: string, name: string, plan?: string, admin: array{name: string, email: string, password: string}, demo?: bool, trial?: bool, max_students?: int|null}  $data
      */
     public function open(array $data): School
     {
@@ -24,13 +24,14 @@ class SchoolProvisioner
         $plan = $data['plan'] ?? config('schools.default_plan');
         $this->validate($slug, $plan);
 
-        $trialDays = config("schools.plans.{$plan}.trial_days");
+        // A trial is asked for, or is the legacy `trial` plan; its length is one global setting.
+        $trial = $data['trial'] ?? $plan === 'trial';
         $school = School::create([
             'id' => $slug,
             'name' => $data['name'],
             'plan' => $plan,
             'status' => School::ACTIVE,
-            'trial_ends_at' => $trialDays ? now()->addDays($trialDays) : null,
+            'trial_ends_at' => $trial ? now()->addDays((int) config('schools.trial_days')) : null,
             'max_students' => $data['max_students'] ?? null,
         ]);
 

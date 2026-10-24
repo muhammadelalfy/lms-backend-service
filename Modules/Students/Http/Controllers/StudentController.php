@@ -3,9 +3,9 @@
 namespace Modules\Students\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Modules\Students\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Modules\Students\Models\Student;
 
 class StudentController extends Controller
 {
@@ -32,11 +32,14 @@ class StudentController extends Controller
 
         // The school's plan says how many students it may have.
         $limit = tenant()?->studentLimit();
-        if ($limit !== null && Student::query()->count() >= $limit) {
+        $used = $limit === null ? 0 : Student::query()->count();
+        if ($limit !== null && $used >= $limit) {
             return response()->json([
-                'message' => "وصلت مدرستك إلى الحد الأقصى للطلاب في باقتها ({$limit}). رقِّ الباقة لإضافة المزيد.",
+                'message' => "وصل مركزك إلى الحد الأقصى للطلاب في باقته ({$limit}). رقِّ الباقة لإضافة المزيد.",
                 'code' => 'plan_limit',
+                'cap' => 'students',
                 'limit' => $limit,
+                'used' => $used,
             ], 402);
         }
 

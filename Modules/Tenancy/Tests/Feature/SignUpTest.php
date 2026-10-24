@@ -50,9 +50,56 @@ class SignUpTest extends TestCase
             ->assertJsonStructure(['trial_ends_at']);
 
         $school = School::query()->findOrFail('alnour');
-        $this->assertSame('trial', $school->plan);
+        $this->assertSame('t3', $school->plan);
         $this->assertSame('center', $school->kind);
         $this->assertNotNull($school->trial_ends_at);
+    }
+
+    public function test_the_chosen_plan_is_clamped_to_the_trial_max_and_remembered(): void
+    {
+        $this->postJson(self::URL, $this->body(['plan' => 't5', 'billing' => 'yearly']))->assertCreated()
+            ->assertJsonPath('plan', 't3')
+            ->assertJsonPath('desired_plan', 't5')
+            ->assertJsonPath('limits.students', 250)
+            ->assertJsonPath('limits.teachers', 3);
+
+        $school = School::query()->findOrFail('alnour');
+        $this->assertSame('t3', $school->plan);
+        $this->assertSame('t5', $school->desired_plan);
+        $this->assertSame('yearly', $school->preferred_billing);
+        $this->assertTrue($school->trial_ends_at->between(now()->addDays(7)->subMinute(), now()->addDays(7)->addMinute()));
+    }
+
+    public function test_the_trial_length_comes_from_config(): void
+    {
+        config(['schools.trial_days' => 3]);
+        $this->postJson(self::URL, $this->body())->assertCreated();
+
+        $this->assertTrue(School::query()->findOrFail('alnour')->trial_ends_at->between(now()->addDays(3)->subMinute(), now()->addDays(3)->addMinute()));
+    }
+
+    public function test_a_plan_below_the_trial_max_is_used_as_chosen(): void
+    {
+        $this->postJson(self::URL, $this->body(['plan' => 't2']))->assertCreated()
+            ->assertJsonPath('plan', 't2')->assertJsonPath('desired_plan', 't2')->assertJsonPath('limits.students', 100);
+    }
+
+    public function test_without_a_plan_the_audiences_trial_plan_is_used(): void
+    {
+        $this->postJson(self::URL, $this->body(['kind' => 'solo']))->assertCreated()
+            ->assertJsonPath('plan', 't1')->assertJsonPath('desired_plan', 't1');
+        $this->assertSame('monthly', School::query()->findOrFail('alnour')->preferred_billing);
+    }
+
+    public function test_a_plan_that_is_not_public_is_refused(): void
+    {
+        $before = School::query()->count();
+        foreach (['trial', 'enterprise', 'gold'] as $plan) {
+            $this->postJson(self::URL, $this->body(['plan' => $plan]))
+                ->assertUnprocessable()->assertJsonPath('errors.plan.0', 'الباقة المختارة غير متاحة.');
+        }
+        $this->postJson(self::URL, $this->body(['billing' => 'weekly']))->assertJsonValidationErrors('billing');
+        $this->assertSame($before, School::query()->count());
     }
 
     public function test_a_taken_or_reserved_address_is_refused_with_the_reason(): void
