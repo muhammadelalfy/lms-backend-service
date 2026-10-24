@@ -13,5 +13,6 @@
     "Reports": true,
     "PluginStore": true,
     "Tenancy": true,
-    "Courses": true
+    "Courses": true,
+    "Ai": true
 }
