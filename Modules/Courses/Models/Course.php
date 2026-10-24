@@ -25,7 +25,7 @@ class Course extends Model
     protected $fillable = [
         'kind', 'title', 'slug', 'summary', 'description', 'goals', 'target_audience', 'estimated_duration_minutes',
         'starts_at', 'ends_at', 'visible_from', 'visible_until', 'is_featured', 'season_name',
-        'sequencing_mode', 'outline_style', 'pricing', 'price_amount', 'discounted_price_amount', 'created_by',
+        'sequencing_mode', 'outline_style', 'pricing', 'price_amount', 'discounted_price_amount', 'access_days', 'created_by',
     ];
 
     protected $attributes = [
@@ -35,6 +35,7 @@ class Course extends Model
         'sequencing_mode' => 'open',
         'outline_style' => 'subjects',
         'is_featured' => false,
+        'version' => 1,
     ];
 
     protected function casts(): array
@@ -50,6 +51,8 @@ class Course extends Model
             'estimated_duration_minutes' => 'integer',
             'price_amount' => 'integer',
             'discounted_price_amount' => 'integer',
+            'access_days' => 'integer',
+            'version' => 'integer',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'visible_from' => 'datetime',
@@ -71,6 +74,11 @@ class Course extends Model
     public function instructors(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'course_instructors')->withPivot('position')->orderByPivot('position');
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(CourseVersion::class)->orderByDesc('number');
     }
 
     public function enrollments(): HasMany

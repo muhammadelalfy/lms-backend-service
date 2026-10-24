@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Modules\Courses\Services;
 
 use Modules\Courses\Enums\ContentStatus;
+use Modules\Courses\Enums\EnrollmentStatus;
 use Modules\Courses\Models\Course;
 use Modules\Courses\Models\CourseLesson;
 use Modules\Courses\Models\CourseSubject;
+use Modules\Courses\Models\CourseVersion;
+use Modules\Courses\Models\Enrollment;
 
 /** The shapes the API returns: what staff see, what the public catalog shows, and what an enrolled student gets. */
 final class CoursePresenter
@@ -50,8 +53,46 @@ final class CoursePresenter
             'goals' => $course->goals ?? [],
             'target_audience' => $course->target_audience,
             'season_name' => $course->season_name,
+            'version' => $course->version,
+            'access_days' => $course->access_days,
             'sequencing_mode' => $course->sequencing_mode->value,
             'outline_style' => $course->outline_style->value,
+        ];
+    }
+
+    /**
+     * Where a student stands in a course. An active enrollment past its end reads as expired even before the
+     * scheduled job has recorded it, so what the student sees matches what they can open.
+     */
+    public static function enrollment(?Enrollment $enrollment): ?array
+    {
+        if (! $enrollment) {
+            return null;
+        }
+        $status = $enrollment->status === EnrollmentStatus::Active && ! $enrollment->grantsAccess() ? EnrollmentStatus::Expired : $enrollment->status;
+
+        return [
+            'status' => $status->value,
+            'payment_id' => $enrollment->payment_id,
+            'amount' => $enrollment->payment?->amount,
+            'expires_at' => $enrollment->expires_at?->toIso8601String(),
+            'completed_at' => $enrollment->completed_at?->toIso8601String(),
+            'course_version' => $enrollment->course_version,
+            'completed_version' => $enrollment->completed_version,
+        ];
+    }
+
+    public static function version(CourseVersion $version): array
+    {
+        $outline = collect($version->snapshot['outline'] ?? []);
+
+        return [
+            'number' => $version->number,
+            'reason' => $version->reason,
+            'created_at' => $version->created_at->toIso8601String(),
+            'author' => $version->author?->name,
+            'sections' => $outline->where('status', ContentStatus::Published->value)->count(),
+            'lessons' => count($version->snapshot['required_lesson_ids'] ?? []),
         ];
     }
 

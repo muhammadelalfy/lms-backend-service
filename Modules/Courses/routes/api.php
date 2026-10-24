@@ -17,6 +17,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('courses/{course}/instructors', [CourseController::class, 'instructors']);
     Route::post('courses/{course}/status', [CourseController::class, 'status']);
     Route::get('courses/{course}/enrollments', [CourseController::class, 'enrollments']);
+    Route::post('courses/{course}/enrollments/{enrollment}/cancel', [CourseController::class, 'cancelEnrollment']);
+    Route::get('courses/{course}/versions', [CourseController::class, 'versions']);
 
     Route::post('courses/{course}/subjects', [CourseSubjectController::class, 'store']);
     Route::put('courses/{course}/subjects/order', [CourseSubjectController::class, 'order']);

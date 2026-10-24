@@ -5,73 +5,49 @@ declare(strict_types=1);
 namespace Modules\Courses\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Modules\Core\Http\Concerns\AuthorizesStaff;
-use Modules\Courses\Enums\ContentStatus;
+use Modules\Courses\Actions\AddSubject;
+use Modules\Courses\Actions\ChangeContentStatus;
+use Modules\Courses\Actions\DeleteContent;
+use Modules\Courses\Actions\ReorderContent;
+use Modules\Courses\Actions\UpdateSubject;
+use Modules\Courses\DTOs\SubjectData;
+use Modules\Courses\Http\Requests\ChangeStatusRequest;
+use Modules\Courses\Http\Requests\CourseStaffRequest;
+use Modules\Courses\Http\Requests\ReorderRequest;
+use Modules\Courses\Http\Requests\SubjectRequest;
 use Modules\Courses\Models\Course;
 use Modules\Courses\Models\CourseSubject;
-use Modules\Courses\Services\CourseOutline;
 
 /** The sections of a course. */
 class CourseSubjectController extends Controller
 {
-    use AuthorizesStaff;
-
-    public function __construct(private readonly CourseOutline $outline) {}
-
-    public function store(Request $request, Course $course)
+    public function store(SubjectRequest $request, Course $course, AddSubject $add)
     {
-        $this->authorizeFor($request, $course);
-
-        return response()->json($this->shape($this->outline->addSubject($course, $this->validated($request))), 201);
+        return response()->json($this->shape($add->handle($course, SubjectData::fromValidated($request->validated()))), 201);
     }
 
-    public function update(Request $request, CourseSubject $subject)
+    public function update(SubjectRequest $request, CourseSubject $subject, UpdateSubject $update)
     {
-        $this->authorizeFor($request, $subject->course);
-        $subject->update($this->validated($request, partial: true));
-
-        return $this->shape($subject->fresh());
+        return $this->shape($update->handle($subject, SubjectData::fromValidated($request->validated()), $request->user())->fresh());
     }
 
-    public function destroy(Request $request, CourseSubject $subject)
+    public function destroy(CourseStaffRequest $request, CourseSubject $subject, DeleteContent $delete)
     {
-        $this->authorizeFor($request, $subject->course);
-        $this->outline->delete($subject);
+        $delete->handle($subject);
 
         return response()->noContent();
     }
 
-    public function status(Request $request, CourseSubject $subject)
+    public function status(ChangeStatusRequest $request, CourseSubject $subject, ChangeContentStatus $change)
     {
-        $this->authorizeFor($request, $subject->course);
-        $data = $request->validate(['status' => ['required', Rule::enum(ContentStatus::class)]]);
-
-        return $this->shape($this->outline->changeStatus($subject, ContentStatus::from($data['status'])));
+        return $this->shape($change->handle($subject, $request->target(), $request->user()));
     }
 
-    public function order(Request $request, Course $course)
+    public function order(ReorderRequest $request, Course $course, ReorderContent $reorder)
     {
-        $this->authorizeFor($request, $course);
-        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer', 'distinct']])['ids'];
-        $this->outline->reorder($course->subjects(), $ids);
+        $reorder->handle($course->subjects(), $request->validated('ids'), $request->user());
 
         return response()->noContent();
-    }
-
-    private function authorizeFor(Request $request, Course $course): void
-    {
-        $this->authorizeStaff($request);
-        abort_unless($request->user()->can('update', $course), 403, 'لا تملك صلاحية هذه الدورة.');
-    }
-
-    private function validated(Request $request, bool $partial = false): array
-    {
-        return $request->validate([
-            'title' => [$partial ? 'sometimes' : 'required', 'string', 'max:200'],
-            'description' => ['nullable', 'string', 'max:5000'],
-        ]);
     }
 
     private function shape(CourseSubject $subject): array

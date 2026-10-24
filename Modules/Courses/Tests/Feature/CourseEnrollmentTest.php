@@ -130,13 +130,13 @@ class CourseEnrollmentTest extends TestCase
         [$user, $student] = $this->learner();
 
         $join = $this->postJson("/api/catalog/{$course->slug}/enroll")->assertCreated()
-            ->assertJsonPath('enrollment.status', 'awaiting_payment')->assertJsonPath('enrollment.amount', 400);
+            ->assertJsonPath('enrollment.status', 'pending')->assertJsonPath('enrollment.amount', 400);
         $payment = Payment::findOrFail($join->json('enrollment.payment_id'));
         $this->assertSame([$student->id, 400, 'pending', $user->id], [$payment->student_id, $payment->amount, $payment->status, $payment->recorded_by]);
         $this->assertStringContainsString('الرياضيات', $payment->note);
 
         // The lessons are listed but their content is not handed out, and nothing can be completed.
-        $locked = $this->getJson("/api/my-courses/{$course->id}")->assertOk()->assertJsonPath('enrollment.status', 'awaiting_payment');
+        $locked = $this->getJson("/api/my-courses/{$course->id}")->assertOk()->assertJsonPath('enrollment.status', 'pending');
         $this->assertStringNotContainsString('videos.example', $locked->getContent());
         $this->assertStringNotContainsString('meet.example', $locked->getContent());
         $lessonId = $locked->json('subjects.0.lessons.0.id');
@@ -158,7 +158,7 @@ class CourseEnrollmentTest extends TestCase
         $paymentId = $this->postJson("/api/catalog/{$course->slug}/enroll")->json('enrollment.payment_id');
         Payment::whereKey($paymentId)->update(['status' => 'overdue']);
 
-        $this->getJson("/api/my-courses/{$course->id}")->assertJsonPath('enrollment.status', 'awaiting_payment');
+        $this->getJson("/api/my-courses/{$course->id}")->assertJsonPath('enrollment.status', 'pending');
     }
 
     public function test_staff_cannot_join_courses_and_a_student_must_join_before_opening_one(): void
@@ -220,7 +220,7 @@ class CourseEnrollmentTest extends TestCase
         $this->postJson("/api/course-lessons/{$ids[1]}/complete")->assertOk()->assertJsonPath('completed_lessons', 2); // idempotent
         $this->postJson("/api/course-lessons/{$ids[2]}/complete")->assertOk()->assertJsonPath('course_completed', true);
 
-        $this->getJson('/api/my-courses')->assertJsonPath('data.0.enrollment.completed', true)->assertJsonPath('data.0.progress.completed_lessons', 3);
+        $this->getJson('/api/my-courses')->assertJsonPath('data.0.enrollment.status', 'completed')->assertJsonPath('data.0.progress.completed_lessons', 3);
     }
 
     public function test_open_sequencing_lets_a_student_take_lessons_in_any_order(): void
@@ -264,7 +264,7 @@ class CourseEnrollmentTest extends TestCase
         $rows = collect($this->getJson("/api/courses/{$course->id}/enrollments")->assertOk()->json('data'))->keyBy('student.id');
         $this->assertCount(2, $rows);
         $this->assertSame(['active', 1, 2], [$rows[$paying->id]['status'], $rows[$paying->id]['completed_lessons'], $rows[$paying->id]['published_lessons']]);
-        $this->assertSame(['awaiting_payment', 0], [$rows->except($paying->id)->first()['status'], $rows->except($paying->id)->first()['completed_lessons']]);
+        $this->assertSame(['pending', 0], [$rows->except($paying->id)->first()['status'], $rows->except($paying->id)->first()['completed_lessons']]);
 
         Sanctum::actingAs(User::factory()->create(['role' => 'teacher']));
         $this->getJson("/api/courses/{$course->id}/enrollments")->assertForbidden();

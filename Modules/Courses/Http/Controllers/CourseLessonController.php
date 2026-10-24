@@ -5,88 +5,49 @@ declare(strict_types=1);
 namespace Modules\Courses\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Modules\Core\Http\Concerns\AuthorizesStaff;
-use Modules\Courses\Enums\ContentStatus;
-use Modules\Courses\Models\Course;
+use Modules\Courses\Actions\AddLesson;
+use Modules\Courses\Actions\ChangeContentStatus;
+use Modules\Courses\Actions\DeleteContent;
+use Modules\Courses\Actions\ReorderContent;
+use Modules\Courses\Actions\UpdateLesson;
+use Modules\Courses\DTOs\LessonData;
+use Modules\Courses\Http\Requests\ChangeStatusRequest;
+use Modules\Courses\Http\Requests\CourseStaffRequest;
+use Modules\Courses\Http\Requests\LessonRequest;
+use Modules\Courses\Http\Requests\ReorderRequest;
 use Modules\Courses\Models\CourseLesson;
 use Modules\Courses\Models\CourseSubject;
-use Modules\Courses\Services\CourseOutline;
 
 /** The lessons of a section, including live ones that meet by a Meet or Zoom link. */
 class CourseLessonController extends Controller
 {
-    use AuthorizesStaff;
-
-    public function __construct(private readonly CourseOutline $outline) {}
-
-    public function store(Request $request, CourseSubject $subject)
+    public function store(LessonRequest $request, CourseSubject $subject, AddLesson $add)
     {
-        $this->authorizeFor($request, $subject->course);
-
-        return response()->json($this->shape($this->outline->addLesson($subject, $this->validated($request))), 201);
+        return response()->json($this->shape($add->handle($subject, LessonData::fromValidated($request->validated()))), 201);
     }
 
-    public function update(Request $request, CourseLesson $lesson)
+    public function update(LessonRequest $request, CourseLesson $lesson, UpdateLesson $update)
     {
-        $this->authorizeFor($request, $lesson->subject->course);
-        $lesson->update($this->validated($request, $lesson));
-
-        return $this->shape($lesson->fresh());
+        return $this->shape($update->handle($lesson, LessonData::fromValidated($request->validated()), $request->user())->fresh());
     }
 
-    public function destroy(Request $request, CourseLesson $lesson)
+    public function destroy(CourseStaffRequest $request, CourseLesson $lesson, DeleteContent $delete)
     {
-        $this->authorizeFor($request, $lesson->subject->course);
-        $this->outline->delete($lesson);
+        $delete->handle($lesson);
 
         return response()->noContent();
     }
 
-    public function status(Request $request, CourseLesson $lesson)
+    public function status(ChangeStatusRequest $request, CourseLesson $lesson, ChangeContentStatus $change)
     {
-        $this->authorizeFor($request, $lesson->subject->course);
-        $data = $request->validate(['status' => ['required', Rule::enum(ContentStatus::class)]]);
-
-        return $this->shape($this->outline->changeStatus($lesson, ContentStatus::from($data['status'])));
+        return $this->shape($change->handle($lesson, $request->target(), $request->user()));
     }
 
-    public function order(Request $request, CourseSubject $subject)
+    public function order(ReorderRequest $request, CourseSubject $subject, ReorderContent $reorder)
     {
-        $this->authorizeFor($request, $subject->course);
-        $ids = $request->validate(['ids' => ['required', 'array'], 'ids.*' => ['integer', 'distinct']])['ids'];
-        $this->outline->reorder($subject->lessons(), $ids);
+        $reorder->handle($subject->lessons(), $request->validated('ids'), $request->user());
 
         return response()->noContent();
-    }
-
-    private function authorizeFor(Request $request, Course $course): void
-    {
-        $this->authorizeStaff($request);
-        abort_unless($request->user()->can('update', $course), 403, 'لا تملك صلاحية هذه الدورة.');
-    }
-
-    private function validated(Request $request, ?CourseLesson $lesson = null): array
-    {
-        $data = $request->validate([
-            'title' => [$lesson ? 'sometimes' : 'required', 'string', 'max:200'],
-            'description' => ['nullable', 'string', 'max:20000'],
-            'summary' => ['nullable', 'string', 'max:2000'],
-            'key_points' => ['nullable', 'array', 'max:30'],
-            'key_points.*' => ['string', 'max:300'],
-            'estimated_duration_minutes' => ['nullable', 'integer', 'min:1', 'max:10000'],
-            'video_url' => ['nullable', 'url', 'max:500'],
-            'live_at' => ['nullable', 'date'],
-            'live_provider' => ['nullable', Rule::in(['meet', 'zoom', 'other'])],
-            'live_link' => ['nullable', 'url', 'max:500', 'required_with:live_at'],
-        ]);
-        // A live lesson without a stated provider is simply "another" kind of link.
-        if (! empty($data['live_link']) && empty($data['live_provider'])) {
-            $data['live_provider'] = 'other';
-        }
-
-        return $data;
     }
 
     private function shape(CourseLesson $lesson): array
