@@ -48,7 +48,7 @@ class SchoolLifecycleTest extends TestCase
     private function newSchool(array $overrides = []): array
     {
         return $overrides + [
-            'slug' => 'alnour', 'name' => 'مدرسة النور', 'plan' => 'basic',
+            'slug' => 'alnour', 'name' => 'مركز النور', 'plan' => 'basic',
             'admin' => ['name' => 'مدير', 'email' => 'admin@alnour.test', 'password' => 'secret-pass-1'],
         ];
     }
@@ -123,7 +123,9 @@ class SchoolLifecycleTest extends TestCase
                 ->assertStatus(422)->assertJsonPath('errors.slug.0', 'هذا الكود محجوز.');
         }
         $this->operator()->postJson(self::CENTRAL.'/schools', $this->newSchool(['slug' => 'demo']))
+
             ->assertStatus(422)->assertJsonPath('errors.slug.0', 'هذا العنوان محجوز أو مستخدم.');
+
 
         $this->operator()->postJson(self::CENTRAL.'/schools', $this->newSchool(['plan' => 'gold']))
             ->assertStatus(422)->assertJsonValidationErrors('plan');

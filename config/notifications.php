@@ -15,7 +15,7 @@ return [
         'payment' => ['label' => 'المدفوعات', 'critical' => true],
         'session' => ['label' => 'مواعيد الحصص', 'critical' => false],
         'duty' => ['label' => 'الواجبات', 'critical' => false],
-        'message' => ['label' => 'رسائل المدرسة', 'critical' => false],
+        'message' => ['label' => 'رسائل المركز', 'critical' => false],
         'exam_result' => ['label' => 'نتائج الاختبارات', 'critical' => false],
         'worksheet' => ['label' => 'أوراق العمل', 'critical' => false],
         'chat' => ['label' => 'المحادثات', 'critical' => false],

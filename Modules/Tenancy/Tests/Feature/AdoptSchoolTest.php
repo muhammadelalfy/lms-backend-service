@@ -34,7 +34,7 @@ class AdoptSchoolTest extends TestCase
         $before = filesize($this->file);
 
         $this->artisan('school:adopt', [
-            'slug' => 'legacy', '--name' => 'مدرستي', '--database' => '../storage/framework/testing/'.basename($this->file),
+            'slug' => 'legacy', '--name' => 'مركزي', '--database' => '../storage/framework/testing/'.basename($this->file),
         ])->assertSuccessful();
 
         $school = School::query()->find('legacy');
