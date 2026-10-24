@@ -91,6 +91,15 @@ return [
         ],
     ],
 
+    // The AI service (lms-ai-service): exam materials, generation and grading help. Laravel calls it
+    // with this bearer token and the school id in X-Center-Id; empty url = the AI features are off.
+    'ai' => [
+        'url' => env('AI_SERVICE_URL'),
+        'token' => env('AI_SERVICE_TOKEN'),
+        'timeout' => (int) env('AI_SERVICE_TIMEOUT', 30),
+        'extract_timeout' => (int) env('AI_SERVICE_EXTRACT_TIMEOUT', 180),
+    ],
+
     // Built-in voice and video: a self-hosted LiveKit server (open source, no
     // per-minute fee). `url` is the wss:// address the apps connect to; the
     // key and secret sign join tokens and verify its webhooks.

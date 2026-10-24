@@ -103,6 +103,18 @@ class School extends BaseTenant implements TenantWithDatabase
         return $value === null ? null : (int) $value;
     }
 
+    /**
+     * A plan feature of this school: true | false | 'soon'. The operator can switch one on (or off) for a
+     * single school through `data.features`, otherwise the plan decides; unknown features are false.
+     */
+    public function feature(string $key): bool|string
+    {
+        $overrides = (array) ($this->getAttributes()['features'] ?? []);
+        $value = array_key_exists($key, $overrides) ? $overrides[$key] : config("schools.plans.{$this->plan}.features.{$key}", false);
+
+        return $value === 'soon' ? 'soon' : (bool) $value;
+    }
+
     /** @return array<string, int|null> every cap of the school */
     public function limits(): array
     {
