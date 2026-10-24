@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Tenancy\Http\Controllers\OperatorDashboardController;
+use Modules\Tenancy\Http\Controllers\PlansController;
 use Modules\Tenancy\Http\Controllers\SchoolController;
 use Modules\Tenancy\Http\Controllers\SchoolLookupController;
 use Modules\Tenancy\Http\Controllers\SignUpController;
@@ -26,6 +27,11 @@ foreach (config('tenancy.central_domains') as $domain) {
     Route::middleware(['api', 'throttle:20,1'])
         ->domain($domain)
         ->get('api/school-lookup', SchoolLookupController::class);
+
+    // The public plan catalog (landing, web app): central addresses only.
+    Route::middleware(['api', 'throttle:60,1'])
+        ->domain($domain)
+        ->get('api/plans', PlansController::class);
 
     // The public sign-up: a trial academy of one's own. Few per visitor per hour.
     Route::middleware(['api', 'throttle:5,60'])
