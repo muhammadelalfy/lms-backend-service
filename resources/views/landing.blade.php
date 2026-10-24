@@ -199,6 +199,7 @@
     <link rel="stylesheet" href="{{ asset('landing/motion.css') }}">
     <link rel="stylesheet" href="{{ asset('landing/extras.css') }}">
     <link rel="stylesheet" href="{{ asset('landing/entry.css') }}">
+    <link rel="stylesheet" href="{{ asset('landing/pricing.css') }}">
 </head>
 <body>
 @php
@@ -392,37 +393,7 @@
     </div>
 
     @unless ($target)
-    <section id="pricing" class="tint">
-        <div class="wrap">
-            <div class="sec-head">
-                <div class="num">05</div>
-                <h2>باقة على مقاس مركزك</h2>
-            </div>
-            <p class="price-lead">ابدأ بتجربة مجانية، ثم اختر الباقة بحسب عدد طلابك. بدون بطاقة بنكية للبدء.</p>
-            <div class="grid g3 pricing">
-                <article class="card plan">
-                    <h3>مدرس فردي</h3>
-                    <p>مركز باسمك لمجموعة طلابك: دورات، حصص، اختبارات، وأولياء أمور.</p>
-                    <ul><li>دورات ودروس بفيديو (يوتيوب)</li><li>اختبارات وتصحيح</li><li>أكواد دخول للطلاب</li></ul>
-                    <button type="button" class="btn btn-navy" data-open-signup="solo">ابدأ تجربتك المجانية</button>
-                </article>
-                <article class="card plan plan-main">
-                    <div class="plan-tag">الأنسب للسناتر</div>
-                    <h3>سنتر دروس</h3>
-                    <p>عدة مدرسين ومجموعات في مكان واحد، مع حضور وتحصيل ومساعدين.</p>
-                    <ul><li>مدرسون ومساعدون بصلاحيات</li><li>حضور QR ووجه وتنبيه أولياء الأمور</li><li>مدفوعات وأقساط وتقارير الإيراد</li></ul>
-                    <button type="button" class="btn btn-gold" data-open-signup="center">ابدأ تجربتك المجانية</button>
-                </article>
-                <article class="card plan">
-                    <h3>مجموعة مدرسين</h3>
-                    <p>فريق يدرّس تحت اسم واحد، مع حساب كل مدرس لحصته.</p>
-                    <ul><li>كل مدرس بدوراته وطلابه</li><li>رسائل ومحادثات داخل المنصة</li><li>لوحة واحدة للمتابعة</li></ul>
-                    <button type="button" class="btn btn-navy" data-open-signup="group">ابدأ تجربتك المجانية</button>
-                </article>
-            </div>
-            <p class="price-foot">أكثر من ألف طالب أو احتياج خاص؟ اكتب لنا ونجهّز عرضاً مناسباً@if ($email) على <a href="mailto:{{ $email }}">{{ $email }}</a>@endif.</p>
-        </div>
-    </section>
+        @include('landing._pricing')
     @endunless
 
     <section id="download">
@@ -492,35 +463,7 @@
             <button class="btn btn-gold school-go" type="submit">متابعة</button>
         </form>
     </dialog>
-    <dialog class="school-dialog" id="signup-dialog" aria-labelledby="signup-title">
-        <form class="school-card signup-card" id="signup-form" novalidate>
-            <button type="button" class="school-x" data-close-signup aria-label="إغلاق">&times;</button>
-            <h2 id="signup-title">ابدأ تجربتك المجانية</h2>
-            <p class="school-help">تجهّز مركزك في دقيقة. تقدر تغيّر كل شيء بعدها.</p>
-            <label for="su-kind">نوع النشاط</label>
-            <select id="su-kind" name="kind" class="su-input">
-                <option value="center">سنتر دروس</option>
-                <option value="group">مجموعة مدرسين</option>
-                <option value="solo">مدرس فردي</option>
-            </select>
-            <label for="su-name">اسم المركز</label>
-            <input id="su-name" name="name" class="su-input" maxlength="120" required autocomplete="organization">
-            <label for="su-slug">عنوان المركز</label>
-            <div class="school-field">
-                <input id="su-slug" name="slug" dir="ltr" autocapitalize="none" spellcheck="false" maxlength="40" required placeholder="alnour">
-                <span dir="ltr" aria-hidden="true">.{{ $base }}</span>
-            </div>
-            <label for="su-admin">اسمك</label>
-            <input id="su-admin" name="admin_name" class="su-input" maxlength="120" required autocomplete="name">
-            <label for="su-email">البريد الإلكتروني</label>
-            <input id="su-email" name="email" type="email" dir="ltr" class="su-input" maxlength="190" required autocomplete="email">
-            <label for="su-pass">كلمة المرور (8 أحرف على الأقل)</label>
-            <input id="su-pass" name="password" type="password" dir="ltr" class="su-input" minlength="8" maxlength="100" required autocomplete="new-password">
-            <input type="text" name="website" class="su-trap" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <p class="school-status" id="signup-status" role="status" aria-live="polite"></p>
-            <button class="btn btn-gold school-go" type="submit">افتح مركزي</button>
-        </form>
-    </dialog>
+    @include('landing._signup')
 @endunless
 <script src="{{ asset('vendor/gsap/gsap.min.js') }}"></script>
 <script src="{{ asset('vendor/gsap/ScrollTrigger.min.js') }}"></script>
@@ -528,7 +471,7 @@
 <script src="{{ asset('landing/extras.js') }}"></script>
 <script src="{{ asset('landing/entry.js') }}" defer></script>
 @unless ($target)
-<script src="{{ asset('landing/signup.js') }}" defer></script>
+<script src="{{ asset('landing/pricing.js') }}" defer></script>
 @endunless
 </body>
 </html>
