@@ -123,7 +123,7 @@ class SchoolLifecycleTest extends TestCase
                 ->assertStatus(422)->assertJsonPath('errors.slug.0', 'هذا الكود محجوز.');
         }
         $this->operator()->postJson(self::CENTRAL.'/schools', $this->newSchool(['slug' => 'demo']))
-            ->assertStatus(422)->assertJsonPath('errors.slug.0', 'هذا الكود مستخدم لمدرسة أخرى.');
+            ->assertStatus(422)->assertJsonPath('errors.slug.0', 'هذا العنوان محجوز أو مستخدم.');
 
         $this->operator()->postJson(self::CENTRAL.'/schools', $this->newSchool(['plan' => 'gold']))
             ->assertStatus(422)->assertJsonValidationErrors('plan');

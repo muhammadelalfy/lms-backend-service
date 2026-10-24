@@ -98,7 +98,7 @@ class SchoolProvisioner
         } elseif (in_array($slug, config('schools.reserved_slugs'), true)) {
             $errors['slug'] = 'هذا الكود محجوز.';
         } elseif (School::query()->whereKey($slug)->exists() || Domain::query()->where('domain', $slug.'.'.config('tenancy.base_domain'))->exists()) {
-            $errors['slug'] = 'هذا الكود مستخدم لمدرسة أخرى.';
+            $errors['slug'] = 'هذا العنوان محجوز أو مستخدم.';
         }
         if (! array_key_exists($plan, config('schools.plans'))) {
             $errors['plan'] = 'باقة غير معروفة.';
