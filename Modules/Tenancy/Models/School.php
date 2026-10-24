@@ -2,6 +2,7 @@
 
 namespace Modules\Tenancy\Models;
 
+use Illuminate\Support\Carbon;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
@@ -15,8 +16,11 @@ use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
  * @property string $name
  * @property string $plan trial | basic | pro | enterprise
  * @property string $status active | suspended
- * @property \Illuminate\Support\Carbon|null $trial_ends_at
+ * @property Carbon|null $trial_ends_at
  * @property int|null $max_students
+ * @property string|null $brand_color the academy's color, like #1F4E8C (kept in `data`)
+ * @property string|null $logo_url (kept in `data`)
+ * @property string|null $kind center | group | solo, as the owner described themselves at sign-up (kept in `data`)
  */
 class School extends BaseTenant implements TenantWithDatabase
 {

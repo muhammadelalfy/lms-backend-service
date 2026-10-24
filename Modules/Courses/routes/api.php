@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Courses\Http\Controllers\AccessCodeController;
 use Modules\Courses\Http\Controllers\CatalogController;
 use Modules\Courses\Http\Controllers\CourseController;
 use Modules\Courses\Http\Controllers\CourseLessonController;
@@ -19,6 +20,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('courses/{course}/enrollments', [CourseController::class, 'enrollments']);
     Route::post('courses/{course}/enrollments/{enrollment}/cancel', [CourseController::class, 'cancelEnrollment']);
     Route::get('courses/{course}/versions', [CourseController::class, 'versions']);
+
+    Route::get('courses/{course}/access-codes', [AccessCodeController::class, 'index']);
+    Route::post('courses/{course}/access-codes', [AccessCodeController::class, 'store']);
+    Route::delete('access-codes/{code}', [AccessCodeController::class, 'destroy']);
+    Route::post('access-codes/redeem', [AccessCodeController::class, 'redeem']);
 
     Route::post('courses/{course}/subjects', [CourseSubjectController::class, 'store']);
     Route::put('courses/{course}/subjects/order', [CourseSubjectController::class, 'order']);

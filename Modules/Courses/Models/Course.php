@@ -81,6 +81,11 @@ class Course extends Model
         return $this->hasMany(CourseVersion::class)->orderByDesc('number');
     }
 
+    public function accessCodes(): HasMany
+    {
+        return $this->hasMany(AccessCode::class);
+    }
+
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);

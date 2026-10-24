@@ -6,6 +6,7 @@ namespace Modules\Courses\Http\Requests;
 
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Courses\Models\AccessCode;
 use Modules\Courses\Models\Course;
 use Modules\Courses\Models\CourseLesson;
 use Modules\Courses\Models\CourseSubject;
@@ -23,13 +24,16 @@ abstract class CourseRequest extends FormRequest
         return $this->user()->isAnyRole('admin', 'teacher');
     }
 
-    /** The course this request is about, whichever of course, section or lesson the route names. */
+    /** The course this request is about, whichever of course, section, lesson or code the route names. */
     protected function course(): Course
     {
-        foreach (['course', 'subject', 'lesson'] as $name) {
+        foreach (['course', 'subject', 'lesson', 'code'] as $name) {
             $model = $this->route($name);
             if ($model instanceof Course) {
                 return $model;
+            }
+            if ($model instanceof AccessCode) {
+                return $model->course;
             }
             if ($model instanceof CourseSubject) {
                 return $model->course;

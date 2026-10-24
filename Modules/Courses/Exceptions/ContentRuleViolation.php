@@ -71,4 +71,23 @@ final class ContentRuleViolation extends HttpException
     {
         return new self('قائمة الترتيب يجب أن تضم كل العناصر الحالية مرة واحدة بالضبط.');
     }
+
+    public static function codeUnknown(): self
+    {
+        return new self('هذا الكود غير صحيح. تأكد منه وحاول مرة أخرى.', 404);
+    }
+
+    public static function codeUnusable(string $why): self
+    {
+        return new self(match ($why) {
+            'disabled' => 'هذا الكود لم يعد متاحاً.',
+            'expired' => 'انتهت صلاحية هذا الكود.',
+            default => 'استُخدم هذا الكود بالكامل.',
+        });
+    }
+
+    public static function courseNotOpen(): self
+    {
+        return new self('هذه الدورة غير متاحة الآن.');
+    }
 }

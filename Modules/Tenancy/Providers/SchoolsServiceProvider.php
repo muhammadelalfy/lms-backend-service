@@ -69,6 +69,9 @@ final class SchoolsServiceProvider extends ServiceProvider
         $this->app->booted(function () {
             require __DIR__.'/../routes/central.php';
         });
+
+        // What people of a school see and the admin edits (its look).
+        Route::middleware(['api', 'school'])->prefix('api')->group(__DIR__.'/../routes/school.php');
     }
 
     private function prioritiseTenancyMiddleware(): void
