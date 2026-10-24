@@ -8,7 +8,7 @@ One installation serves many schools. **Each school has its own database** and i
 
 ```bash
 php artisan migrate                                         # central tables only
-php artisan school:create alnour --name="مدرسة النور" --plan=basic --admin-email=owner@alnour.example
+php artisan school:create alnour --name="مركز النور" --plan=basic --admin-email=owner@alnour.example
 php artisan school:adopt alnour --database=database.sqlite  # or: keep an existing single-school database as a school
 php artisan school:list
 php artisan school:status alnour suspended                  # turn a school away (or `active`)

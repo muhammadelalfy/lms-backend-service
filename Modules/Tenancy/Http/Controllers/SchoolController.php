@@ -91,7 +91,7 @@ class SchoolController extends Controller
     /** Closes the school and deletes its database; the school's id must be repeated to confirm. */
     public function destroy(Request $request, School $school)
     {
-        abort_unless($request->query('confirm') === $school->id, 422, 'أرسل كود المدرسة في confirm للتأكيد.');
+        abort_unless($request->query('confirm') === $school->id, 422, 'أرسل كود المركز في confirm للتأكيد.');
         $school->delete();
 
         return response()->noContent();
