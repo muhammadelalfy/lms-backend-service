@@ -137,8 +137,9 @@ class SchoolLifecycleTest extends TestCase
         $this->operator()->postJson(self::CENTRAL.'/schools', $this->newSchool(['plan' => 'trial']))
             ->assertCreated()->assertJsonPath('active', true)->assertJsonPath('student_limit', 30);
 
+        $days = config('schools.trial_days');
         $ends = School::query()->find('alnour')->trial_ends_at;
-        $this->assertTrue($ends->between(now()->addDays(13), now()->addDays(15)));
+        $this->assertTrue($ends->between(now()->addDays($days)->subMinute(), now()->addDays($days)->addMinute()));
     }
 
     public function test_the_operator_changes_a_plan_and_a_school_settings_without_leaking_them(): void
@@ -191,7 +192,8 @@ class SchoolLifecycleTest extends TestCase
         $this->postJson('/api/auth/login', ['email' => 'a@b.c', 'password' => 'x'])
             ->assertForbidden()->assertJsonPath('code', 'school_locked');
 
-        $this->school->update(['plan' => 'basic']);
+        // The operator activates a paid plan: it has no end date any more.
+        $this->school->update(['plan' => 'basic', 'trial_ends_at' => null]);
         $this->postJson('/api/auth/login', ['email' => 'a@b.c', 'password' => 'x'])->assertStatus(422);
     }
 

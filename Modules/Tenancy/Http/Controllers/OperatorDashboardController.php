@@ -17,8 +17,8 @@ class OperatorDashboardController
         $plans = collect(config('schools.plans'))->map(fn (array $plan, string $key) => [
             'key' => $key,
             'label' => $plan['label'],
-            'max_students' => $plan['max_students'],
-            'trial_days' => $plan['trial_days'],
+            'max_students' => $plan['limits']['students'] ?? null,
+            'trial_days' => config('schools.trial_days'),
         ])->values()->all();
 
         return response()
