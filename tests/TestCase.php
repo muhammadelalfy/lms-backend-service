@@ -59,7 +59,7 @@ abstract class TestCase extends BaseTestCase
         $file = $this->makeSchoolDatabaseFile($slug);
         $this->schoolDatabaseFiles[] = $file;
 
-        $school = new School(['id' => $slug, 'name' => "مدرسة {$slug}", 'plan' => $plan, 'status' => School::ACTIVE]);
+        $school = new School(['id' => $slug, 'name' => "مركز {$slug}", 'plan' => $plan, 'status' => School::ACTIVE]);
         $school->setInternal('db_name', '../storage/framework/testing/'.basename($file));
         $school->save();
         $school->domains()->create(['domain' => "{$slug}.mudarisy.test"]);

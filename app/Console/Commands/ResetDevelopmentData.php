@@ -27,7 +27,7 @@ class ResetDevelopmentData extends Command
             // First run: open the school with the demo data, and the local administrator.
             $provisioner->open([
                 'slug' => $slug,
-                'name' => 'مدرسة تجريبية',
+                'name' => 'مركز تجريبي',
                 'plan' => 'enterprise',
                 'demo' => true,
                 'admin' => ['name' => 'مدير التطوير', 'email' => 'admin@local.test', 'password' => 'AdminLocal!2026'],

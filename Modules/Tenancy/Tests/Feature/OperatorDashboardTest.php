@@ -35,7 +35,7 @@ class OperatorDashboardTest extends TestCase
             ->assertSee('operator/operator.js', false)
             ->assertSee('name="robots" content="noindex, nofollow"', false)
             ->assertDontSee('op-secret')
-            ->assertDontSee('مدرسة تجريبية')
+            ->assertDontSee('مركز تجريبي')
             ->assertDontSee('demo.mudarisy.test');
     }
 

@@ -60,7 +60,7 @@ class PluginStoreController extends Controller
 
         $module = $installer->install($plugin, $request->user()->id);
 
-        return response()->json(['module' => $module->load('plugin'), 'message' => 'تم تفعيل الإضافة لمدرستك.']);
+        return response()->json(['module' => $module->load('plugin'), 'message' => 'تم تفعيل الإضافة لمركزك.']);
     }
 
     public function uninstall(Request $request, PluginProduct $plugin, PluginInstaller $installer): JsonResponse
@@ -70,6 +70,6 @@ class PluginStoreController extends Controller
 
         $installer->uninstall($module);
 
-        return response()->json(['message' => 'تم إلغاء تفعيل الإضافة لمدرستك.']);
+        return response()->json(['message' => 'تم إلغاء تفعيل الإضافة لمركزك.']);
     }
 }

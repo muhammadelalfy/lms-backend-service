@@ -20,7 +20,7 @@
     <form class="gate-card" id="gate-form" autocomplete="off">
         <img src="{{ asset('brand/mudarisy_logo_navy.png') }}" alt="{{ config('landing.name') }}" width="160" height="48">
         <h1>لوحة المشغّل</h1>
-        <p>إدارة المدارس على المنصة. أدخل رمز المشغّل للمتابعة.</p>
+        <p>إدارة المراكز على المنصة. أدخل رمز المشغّل للمتابعة.</p>
         <label for="token">رمز المشغّل</label>
         <input id="token" type="password" dir="ltr" autocomplete="off" autocapitalize="none" spellcheck="false" required>
         <p class="note error" id="gate-error" role="alert" hidden></p>
@@ -44,26 +44,26 @@
 
     <main class="wrap">
         <section class="stats" aria-label="ملخص">
-            <div class="stat"><span>المدارس</span><b id="stat-total">–</b></div>
+            <div class="stat"><span>المراكز</span><b id="stat-total">–</b></div>
             <div class="stat"><span>نشطة</span><b id="stat-active">–</b></div>
             <div class="stat"><span>موقوفة أو منتهية</span><b id="stat-locked">–</b></div>
             <div class="stat"><span>الطلاب</span><b id="stat-students">–</b></div>
         </section>
 
         <section class="tools">
-            <div class="search"><label for="q" class="sr">بحث</label><input id="q" type="search" placeholder="ابحث باسم المدرسة أو كودها أو نطاقها"></div>
+            <div class="search"><label for="q" class="sr">بحث</label><input id="q" type="search" placeholder="ابحث باسم المركز أو كودها أو نطاقها"></div>
             <div class="filters" role="group" aria-label="التصفية" id="filters">
                 <button type="button" class="pill is-on" data-filter="all">الكل</button>
                 <button type="button" class="pill" data-filter="active">نشطة</button>
                 <button type="button" class="pill" data-filter="locked">موقوفة</button>
                 <button type="button" class="pill" data-filter="trial-ended">انتهت تجربتها</button>
             </div>
-            <button class="btn primary" type="button" id="new-school">+ مدرسة جديدة</button>
+            <button class="btn primary" type="button" id="new-school">+ مركز جديدة</button>
         </section>
 
         <p class="note error" id="list-error" role="alert" hidden></p>
-        <div class="table" id="table" role="table" aria-label="المدارس"></div>
-        <p class="empty" id="empty" hidden>لا توجد مدارس مطابقة.</p>
+        <div class="table" id="table" role="table" aria-label="المراكز"></div>
+        <p class="empty" id="empty" hidden>لا توجد مراكز مطابقة.</p>
     </main>
 </div>
 
@@ -72,15 +72,15 @@
 {{-- Open a school --}}
 <dialog class="dlg" id="dlg-create">
     <form method="dialog" class="dlg-card" id="form-create" novalidate>
-        <header><h2>مدرسة جديدة</h2><button type="button" class="x" data-close aria-label="إغلاق">&times;</button></header>
+        <header><h2>مركز جديدة</h2><button type="button" class="x" data-close aria-label="إغلاق">&times;</button></header>
         <div class="grid2">
-            <div class="field"><label for="c-slug">كود المدرسة (العنوان)</label>
+            <div class="field"><label for="c-slug">كود المركز (العنوان)</label>
                 <div class="affix" dir="ltr"><input id="c-slug" name="slug" maxlength="40" required autocapitalize="none" spellcheck="false" placeholder="alnour"><span id="c-base"></span></div></div>
-            <div class="field"><label for="c-name">اسم المدرسة</label><input id="c-name" name="name" maxlength="120" required></div>
+            <div class="field"><label for="c-name">اسم المركز</label><input id="c-name" name="name" maxlength="120" required></div>
             <div class="field"><label for="c-plan">الباقة</label><select id="c-plan" name="plan"></select></div>
             <div class="field"><label for="c-max">حد الطلاب (اختياري)</label><input id="c-max" name="max_students" type="number" min="1" inputmode="numeric" placeholder="حسب الباقة"></div>
         </div>
-        <fieldset class="field-set"><legend>مدير المدرسة</legend>
+        <fieldset class="field-set"><legend>مدير المركز</legend>
             <div class="grid2">
                 <div class="field"><label for="c-aname">الاسم</label><input id="c-aname" name="admin_name" maxlength="120" required></div>
                 <div class="field"><label for="c-aemail">البريد الإلكتروني</label><input id="c-aemail" name="admin_email" type="email" dir="ltr" required></div>
@@ -88,17 +88,17 @@
             <div class="field"><label for="c-apass">كلمة المرور</label>
                 <div class="affix" dir="ltr"><input id="c-apass" name="admin_password" minlength="8" maxlength="100" required autocomplete="new-password"><button type="button" class="mini" id="gen-pass">توليد</button></div></div>
         </fieldset>
-        <label class="check"><input type="checkbox" name="demo"> إضافة بيانات تجريبية للمدرسة</label>
+        <label class="check"><input type="checkbox" name="demo"> إضافة بيانات تجريبية للمركز</label>
         <p class="note error" data-error role="alert" hidden></p>
-        <footer><button type="button" class="btn ghost" data-close>إلغاء</button><button class="btn primary" type="submit">فتح المدرسة</button></footer>
+        <footer><button type="button" class="btn ghost" data-close>إلغاء</button><button class="btn primary" type="submit">فتح المركز</button></footer>
     </form>
 </dialog>
 
 {{-- Result of opening a school: shown once --}}
 <dialog class="dlg" id="dlg-created">
     <div class="dlg-card">
-        <header><h2>تم فتح المدرسة</h2><button type="button" class="x" data-close aria-label="إغلاق">&times;</button></header>
-        <p>سلّم هذه البيانات لمدير المدرسة. كلمة المرور لا تُعرض مرة أخرى.</p>
+        <header><h2>تم فتح المركز</h2><button type="button" class="x" data-close aria-label="إغلاق">&times;</button></header>
+        <p>سلّم هذه البيانات لمدير المركز. كلمة المرور لا تُعرض مرة أخرى.</p>
         <dl class="creds" id="created-creds"></dl>
         <footer><button type="button" class="btn ghost" id="copy-creds">نسخ البيانات</button><button type="button" class="btn primary" data-close>تم</button></footer>
     </div>
@@ -107,9 +107,9 @@
 {{-- Edit --}}
 <dialog class="dlg" id="dlg-edit">
     <form method="dialog" class="dlg-card" id="form-edit" novalidate>
-        <header><h2 id="edit-title">تعديل المدرسة</h2><button type="button" class="x" data-close aria-label="إغلاق">&times;</button></header>
+        <header><h2 id="edit-title">تعديل المركز</h2><button type="button" class="x" data-close aria-label="إغلاق">&times;</button></header>
         <div class="grid2">
-            <div class="field"><label for="e-name">اسم المدرسة</label><input id="e-name" name="name" maxlength="120" required></div>
+            <div class="field"><label for="e-name">اسم المركز</label><input id="e-name" name="name" maxlength="120" required></div>
             <div class="field"><label for="e-plan">الباقة</label><select id="e-plan" name="plan"></select></div>
             <div class="field"><label for="e-max">حد الطلاب</label><input id="e-max" name="max_students" type="number" min="1" inputmode="numeric" placeholder="حسب الباقة"></div>
             <div class="field"><label for="e-trial">نهاية الفترة التجريبية</label><input id="e-trial" name="trial_ends_at" type="date"></div>
@@ -123,7 +123,7 @@
 <dialog class="dlg" id="dlg-domain">
     <form method="dialog" class="dlg-card" id="form-domain" novalidate>
         <header><h2 id="domain-title">إضافة نطاق</h2><button type="button" class="x" data-close aria-label="إغلاق">&times;</button></header>
-        <p>عنوان إضافي للمدرسة، مثل موقعها الخاص. يجب أن يشير إلى الخادم أولاً.</p>
+        <p>عنوان إضافي للمركز، مثل موقعها الخاص. يجب أن يشير إلى الخادم أولاً.</p>
         <div class="field"><label for="d-domain">النطاق</label><input id="d-domain" name="domain" dir="ltr" required placeholder="school.example.com" autocapitalize="none" spellcheck="false"></div>
         <p class="note error" data-error role="alert" hidden></p>
         <footer><button type="button" class="btn ghost" data-close>إلغاء</button><button class="btn primary" type="submit">إضافة</button></footer>
@@ -142,9 +142,9 @@
 {{-- Delete: the school's code must be typed --}}
 <dialog class="dlg" id="dlg-delete">
     <form method="dialog" class="dlg-card" id="form-delete" novalidate>
-        <header><h2>حذف المدرسة نهائياً</h2><button type="button" class="x" data-close aria-label="إغلاق">&times;</button></header>
-        <p class="danger-text">سيُحذف حساب المدرسة وقاعدة بياناتها بكل طلابها وسجلاتها، ولا يمكن التراجع.</p>
-        <div class="field"><label for="x-confirm">اكتب كود المدرسة <b dir="ltr" id="x-slug"></b> للتأكيد</label><input id="x-confirm" dir="ltr" autocomplete="off" autocapitalize="none" spellcheck="false" required></div>
+        <header><h2>حذف المركز نهائياً</h2><button type="button" class="x" data-close aria-label="إغلاق">&times;</button></header>
+        <p class="danger-text">سيُحذف حساب المركز وقاعدة بياناتها بكل طلابها وسجلاتها، ولا يمكن التراجع.</p>
+        <div class="field"><label for="x-confirm">اكتب كود المركز <b dir="ltr" id="x-slug"></b> للتأكيد</label><input id="x-confirm" dir="ltr" autocomplete="off" autocapitalize="none" spellcheck="false" required></div>
         <p class="note error" data-error role="alert" hidden></p>
         <footer><button type="button" class="btn ghost" data-close>إلغاء</button><button class="btn danger" type="submit" id="x-go" disabled>حذف نهائياً</button></footer>
     </form>

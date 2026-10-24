@@ -39,6 +39,6 @@ class TeacherRegistrationController extends Controller
         $user->save();
         $audit->record(null, 'teacher.registered', $user);
 
-        return response()->json(['message' => 'تم استلام طلبك. ستتمكن من الدخول بعد موافقة إدارة المدرسة.'], 202);
+        return response()->json(['message' => 'تم استلام طلبك. ستتمكن من الدخول بعد موافقة إدارة المركز.'], 202);
     }
 }

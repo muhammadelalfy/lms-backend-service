@@ -53,7 +53,7 @@ class SchoolLookupTest extends TestCase
             'empty' => [''],
             'path trick' => ['../demo'],
             'domain' => ['demo.mudarisy.test'],
-            'arabic' => ['مدرسة'],
+            'arabic' => ['مركز'],
             'too long' => [str_repeat('a', 80)],
             'wildcard' => ['de%'],
         ];

@@ -11,7 +11,7 @@ class CreateSchool extends Command
     protected $signature = 'school:create {slug : subdomain, e.g. alnour}
         {--name= : the school name}
         {--plan= : trial, basic, pro or enterprise}
-        {--admin-name=مدير المدرسة}
+        {--admin-name=مدير المركز}
         {--admin-email= : the first administrator email}
         {--admin-password= : at least 8 characters}
         {--demo : load the Arabic demo school}';
