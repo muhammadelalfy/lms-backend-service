@@ -22,7 +22,10 @@ class StudentController extends Controller
             $query->whereKey($account->student_id);
         }
 
-        return $query->withCount(['assignments', 'attendanceRecords', 'examResults', 'payments'])->latest()->paginate(25);
+        // A student or parent never counts (or sees) a draft exam result (S6).
+        $learner = $request->user()->isAnyRole('student', 'parent');
+
+        return $query->withCount(['assignments', 'attendanceRecords', 'examResults' => fn ($q) => $q->when($learner, fn ($q) => $q->visibleToStudents()), 'payments'])->latest()->paginate(25);
     }
 
     public function store(Request $request)
@@ -60,7 +63,9 @@ class StudentController extends Controller
     {
         $this->authorizeStudentAccess($request, $student);
 
-        return $student->load(['assignments.worksheet', 'attendanceRecords', 'examResults', 'payments']);
+        $learner = $request->user()->isAnyRole('student', 'parent');
+
+        return $student->load(['assignments.worksheet', 'attendanceRecords', 'examResults' => fn ($q) => $q->when($learner, fn ($q) => $q->visibleToStudents()), 'payments']);
     }
 
     public function update(Request $request, Student $student)

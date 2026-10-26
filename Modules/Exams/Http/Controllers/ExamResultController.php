@@ -4,50 +4,90 @@ namespace Modules\Exams\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Modules\Core\Http\Concerns\AuthorizesStaff;
+use Illuminate\Validation\Rule;
+use Modules\Exams\Actions\ChangeDraftExamResult;
+use Modules\Exams\Actions\CorrectExamResult;
+use Modules\Exams\Actions\PublishExamResult;
+use Modules\Exams\Actions\RecordExamResult;
+use Modules\Exams\DTOs\CorrectionData;
+use Modules\Exams\DTOs\ExamResultData;
+use Modules\Exams\Enums\ExamResultStatus;
+use Modules\Exams\Http\Requests\CorrectExamResultRequest;
+use Modules\Exams\Http\Requests\DeleteExamResultRequest;
+use Modules\Exams\Http\Requests\ListCorrectionsRequest;
+use Modules\Exams\Http\Requests\PublishExamResultRequest;
+use Modules\Exams\Http\Requests\StoreExamResultRequest;
+use Modules\Exams\Http\Requests\UpdateExamResultRequest;
 use Modules\Exams\Models\ExamResult;
+use Modules\Exams\Models\ExamResultCorrection;
 use Modules\Groups\Models\ClassGroup;
-use Modules\Notifications\Services\StudentNotifier;
 
+/**
+ * Exam results (S6): draft -> published -> corrected. Drafts are edited and deleted freely by their
+ * recorder; a published result is final for everyone and changes only through the admin's audited
+ * correction. Students and parents never see drafts. Responses keep the shape the apps already read
+ * (the model with its student), with `status`, `published_at` and `last_corrected_at` added.
+ */
 class ExamResultController extends Controller
 {
-    use AuthorizesStaff;
-
     public function index(Request $request)
     {
         $query = ExamResult::with('student')->latest('taken_at');
         $this->scope($query, $request);
+        if ($request->filled('status') && ! $request->user()->isAnyRole('student', 'parent')) {
+            $request->validate(['status' => [Rule::in(ExamResultStatus::values())]]);
+            $query->where('status', $request->string('status')->toString());
+        }
 
         return $query->paginate(50);
     }
 
-    public function store(Request $request)
+    public function store(StoreExamResultRequest $request, RecordExamResult $record)
     {
-        $this->authorizeStaff($request);
-        $data = $request->validate(['student_id' => 'required|exists:students,id', 'title' => 'required|string|max:180', 'score' => 'required|integer|min:0', 'max_score' => 'required|integer|min:1', 'taken_at' => 'required|date']);
-        abort_unless($request->user()->can('create', [ExamResult::class, $data]), 403, 'لا تملك صلاحية هذا الطالب.');
-        $result = ExamResult::create([...$data, 'recorded_by' => $request->user()->id]);
-        app(StudentNotifier::class)->notify([$result->student_id], 'نتيجة اختبار جديدة', "نتيجة «{$result->title}»: {$result->score} من {$result->max_score}.", 'exam_result');
+        $result = $record->handle($request->user(), ExamResultData::fromValidated($request->validated()));
 
         return response()->json($result->load('student'), 201);
     }
 
-    public function update(Request $request, ExamResult $exam)
+    public function update(UpdateExamResultRequest $request, ExamResult $exam, ChangeDraftExamResult $change)
     {
-        $this->authorizeStaff($request);
-        abort_unless($request->user()->can('update', $exam), 403, 'لا تملك صلاحية هذا الطالب.');
-        $exam->update($request->validate(['title' => 'sometimes|string|max:180', 'score' => 'sometimes|integer|min:0', 'max_score' => 'sometimes|integer|min:1', 'taken_at' => 'sometimes|date']));
-
-        return $exam->fresh('student');
+        return $change->update($exam, ExamResultData::fromValidated($request->validated()))->load('student');
     }
 
-    public function destroy(Request $request, ExamResult $exam)
+    public function destroy(DeleteExamResultRequest $request, ExamResult $exam, ChangeDraftExamResult $change)
     {
-        $this->authorizeStaff($request);
-        abort_unless($request->user()->can('delete', $exam), 403, 'لا تملك صلاحية هذا الطالب.');
-        $exam->delete();
+        $change->delete($exam);
 
         return response()->noContent();
+    }
+
+    public function publish(PublishExamResultRequest $request, ExamResult $exam, PublishExamResult $publish)
+    {
+        return $publish->handle($request->user(), $exam)->load('student');
+    }
+
+    public function correct(CorrectExamResultRequest $request, ExamResult $exam, CorrectExamResult $correct)
+    {
+        ['result' => $result, 'group' => $group] = $correct->handle($request->user(), $exam, CorrectionData::fromValidated($request->validated()));
+
+        return response()->json([...$result->load('student')->toArray(), 'correction_group_id' => $group]);
+    }
+
+    /** The audit trail of a result, most recent first (admin only). */
+    public function corrections(ListCorrectionsRequest $request, ExamResult $exam)
+    {
+        return ExamResultCorrection::query()->with('corrector:id,name')->where('exam_result_id', $exam->id)
+            ->orderByDesc('id')->paginate(50)
+            ->through(fn (ExamResultCorrection $c) => [
+                'id' => $c->id,
+                'correction_group_id' => $c->correction_group_id,
+                'field' => $c->field,
+                'old_value' => $c->old_value,
+                'new_value' => $c->new_value,
+                'reason' => $c->reason,
+                'corrected_by' => $c->corrector ? ['id' => $c->corrector->id, 'name' => $c->corrector->name] : null,
+                'corrected_at' => $c->corrected_at?->toIso8601String(),
+            ]);
     }
 
     private function scope($query, Request $request): void
@@ -56,7 +96,7 @@ class ExamResultController extends Controller
         $account = $user->studentAccount;
         if ($user->isAnyRole('student', 'parent')) {
             abort_unless($account, 403);
-            $query->where('student_id', $account->student_id);
+            $query->where('student_id', $account->student_id)->visibleToStudents();
 
             return;
         }

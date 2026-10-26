@@ -37,6 +37,26 @@ class ExamResultPolicy
         return $this->owns($user, $examResult);
     }
 
+    /** Publishing is the recorder's step: whoever may edit the draft. */
+    public function publish(User $user, ExamResult $examResult): bool
+    {
+        return $this->owns($user, $examResult);
+    }
+
+    /**
+     * A published grade changes only through an audited correction, and only by the admin (like refunds
+     * and certificate revocation): never by the recording teacher, a student or a parent.
+     */
+    public function correct(User $user, ExamResult $examResult): bool
+    {
+        return $user->isAnyRole('admin');
+    }
+
+    public function viewCorrections(User $user, ExamResult $examResult): bool
+    {
+        return $user->isAnyRole('admin');
+    }
+
     private function owns(User $user, ExamResult $examResult): bool
     {
         if ($user->isAnyRole('admin')) {

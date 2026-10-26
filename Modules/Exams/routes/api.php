@@ -7,6 +7,9 @@ use Modules\Exams\Http\Controllers\QuestionBankController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('exams', ExamResultController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::post('/exams/{exam}/publish', [ExamResultController::class, 'publish']);
+    Route::post('/exams/{exam}/correct', [ExamResultController::class, 'correct']);
+    Route::get('/exams/{exam}/corrections', [ExamResultController::class, 'corrections']);
     Route::get('/exam-departments', [ExamManagementController::class, 'departments']);
     Route::post('/exam-departments', [ExamManagementController::class, 'storeDepartment']);
     Route::put('/exam-departments/{department}', [ExamManagementController::class, 'updateDepartment']);
