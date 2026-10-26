@@ -1,7 +1,8 @@
 {{-- Pricing (الباقات). Everything is rendered here from PlanCatalog so the section works with no JavaScript:
      all three audiences are stacked, the monthly price shows, the FAQ is native <details>. public/landing/pricing.js
-     then turns the stack into tabs and adds the billing toggle. No price or limit is written in this file.
-     S12 (calculator + custom-plan card/form) is not built yet: see the marked spot below. --}}
+     then turns the stack into tabs and adds the billing toggle, the add-on calculator and the custom-plan form
+     (landing/_custom.blade.php). No price, limit or rate is written in this file. Without JS the calculator is hidden
+     (it cannot compute) and the custom-plan buttons are mailto links to the contact email. --}}
 @php
     $catalog = app(\Modules\Tenancy\Services\PlanCatalog::class)->cached();
     $promo = $catalog['promo'];
@@ -43,6 +44,14 @@
         ['هل فيه مساعدة في نقل بيانات الطلاب والدعم؟', 'أيوه، ننقل لك قوائم الطلاب من الإكسل أو جروبات الواتساب، وفريق الدعم معاك'.($email ? ' على '.$email : '').'.'],
     ];
     $ctaHref = $email ? 'mailto:'.$email : '#pricing';
+    $customHref = $email ? 'mailto:'.$email.'?subject='.rawurlencode('طلب باقة مخصصة') : '#pr-contact';
+    // Calculator start state: the default tab's recommended plan with no add-ons, i.e. that plan's own prices.
+    $calcAudience = $audiences->first();
+    $calcPlan = $plans[$calcAudience['recommended']];
+    $calcNext = $plans->sortBy('tier')->first(fn ($p) => $p['tier'] > $calcPlan['tier']);
+    $calcMax = $calcNext ? $calcNext['limits']['students'] - $calcPlan['limits']['students'] : 5000;
+    $addons = $catalog['addons'];
+    $vatLine = $catalog['vat_included'] ? 'الأسعار شاملة ضريبة القيمة المضافة.' : 'الأسعار غير شاملة ضريبة القيمة المضافة.';
 @endphp
 <section id="pricing" class="tint pr" data-billing="monthly">
     <div class="wrap">
@@ -134,7 +143,18 @@
                                data-card-name="{{ $p['name'] }}">{{ $isTrial ? 'ابدأ تجربتك المجانية' : 'ابدأ بالباقة دي' }}</a>
                         </article>
                     @endforeach
-                    {{-- S12: the "باقة مخصصة" card and the add-on calculator go here (custom-plan form, POST /api/plan-requests). --}}
+                    <article class="pr-card pr-card-custom" aria-labelledby="pr-{{ $a['key'] }}-custom-name">
+                        <div class="pr-badges"><span class="pr-badge pr-badge-custom">باقة مخصصة</span></div>
+                        <h4 id="pr-{{ $a['key'] }}-custom-name">محتاج أكتر أو حاجة مختلفة؟</h4>
+                        <p class="pr-note">احكيلنا عن مركزك ونجهّز لك عرض يناسبك.</p>
+                        <ul class="pr-list">
+                            <li>أكتر من {{ $num($maxStudents) }} طالب</li>
+                            <li>طلاب أو تخزين إضافي على باقتك</li>
+                            <li>احتياج خاص لمركزك</li>
+                        </ul>
+                        @if ($email)<p class="pr-custom-mail">أو راسلنا على <a href="mailto:{{ $email }}" dir="ltr">{{ $email }}</a></p>@endif
+                        <a class="btn btn-navy pr-cta" href="{{ $customHref }}" data-custom-request data-source="card">اطلب باقة مخصصة</a>
+                    </article>
                 </div>
 
                 <h3 class="pr-sub-title">قارن بين الباقات</h3>
@@ -180,6 +200,62 @@
             </div>
         @endforeach
 
+        {{-- The add-on calculator: one for the section, its plan list follows the active tab. An estimate shown from the
+             embedded catalog's rates; the operator activates the real plan. Hidden without JS (it cannot compute). --}}
+        <div class="pr-calc" id="pr-calc" role="region" aria-labelledby="pr-calc-title">
+            <h3 class="pr-sub-title" id="pr-calc-title">احسب باقتك بالإضافات</h3>
+            <p class="pr-intro pr-calc-intro">محتاج طلاب أو مساحة أكتر من باقتك؟ اختار الباقة وزوّد اللي محتاجه، والإجمالي بيتحسب على طول.</p>
+            <div class="pr-calc-grid">
+                <form class="pr-calc-form" id="pr-calc-form" novalidate>
+                    <label for="pc-plan">الباقة الأساسية</label>
+                    <select id="pc-plan" name="plan" class="su-input">
+                        @foreach ($calcAudience['plans'] as $s)
+                            <option value="{{ $s }}" @selected($s === $calcPlan['slug'])>{{ $plans[$s]['name'] }} — حتى {{ $num($plans[$s]['limits']['students']) }} طالب</option>
+                        @endforeach
+                    </select>
+
+                    <label for="pc-students">طلاب إضافيين</label>
+                    <div class="pr-range">
+                        <input type="range" id="pc-students-range" min="0" max="{{ $calcMax }}" step="1" value="0" aria-label="طلاب إضافيين" aria-describedby="pc-students-help">
+                        <input type="number" id="pc-students" name="extra_students" class="su-input" min="0" max="{{ $calcMax }}" step="1" value="0" inputmode="numeric" dir="ltr" aria-describedby="pc-students-help">
+                    </div>
+                    <p class="pr-calc-help" id="pc-students-help" aria-live="polite">حتى {{ $num($calcMax) }} طالب إضافي في باقة {{ $calcPlan['name'] }}، بـ{{ $num($addons['extra_student']['list']) }} جنيه للطالب في الشهر.</p>
+
+                    <label for="pc-storage">مساحة تخزين إضافية (جيجا)</label>
+                    <div class="pr-range">
+                        <input type="range" id="pc-storage-range" min="0" max="2000" step="1" value="0" aria-label="مساحة تخزين إضافية (جيجا)" aria-describedby="pc-storage-help">
+                        <input type="number" id="pc-storage" name="extra_storage_gb" class="su-input" min="0" max="2000" step="1" value="0" inputmode="numeric" dir="ltr" aria-describedby="pc-storage-help">
+                    </div>
+                    <p class="pr-calc-help" id="pc-storage-help" aria-live="polite">حتى {{ $num(2000) }} جيجا، بـ{{ $num($addons['extra_storage_gb']['list']) }} جنيه للجيجا في الشهر.</p>
+                </form>
+
+                <div class="pr-calc-result">
+                    <dl class="pr-calc-lines">
+                        <div><dt>الباقة الأساسية (<span id="pc-base-name">{{ $calcPlan['name'] }}</span>)</dt><dd><span id="pc-base">{{ $num($calcPlan['price']['list_monthly']) }}</span> جنيه</dd></div>
+                        <div><dt>طلاب إضافيين <span class="pr-calc-x" id="pc-st-calc">(0 × {{ $num($addons['extra_student']['list']) }})</span></dt><dd><span id="pc-st">0</span> جنيه</dd></div>
+                        <div><dt>تخزين إضافي <span class="pr-calc-x" id="pc-gb-calc">(0 × {{ $num($addons['extra_storage_gb']['list']) }})</span></dt><dd><span id="pc-gb">0</span> جنيه</dd></div>
+                        @if ($promo['active'])
+                            <div class="pr-calc-sub"><dt>الإجمالي قبل الخصم</dt><dd><s><span id="pc-list">{{ $num($calcPlan['price']['list_monthly']) }}</span><span class="sr-only">السعر قبل الخصم</span></s> جنيه</dd></div>
+                            <div class="pr-calc-sub"><dt>{{ $promo['label'] }} {{ $promo['percent'] }}%</dt><dd>− <span id="pc-off">{{ $num($calcPlan['price']['list_monthly'] - $calcPlan['price']['shown_monthly']) }}</span> جنيه</dd></div>
+                        @endif
+                    </dl>
+                    <div class="pr-calc-total" id="pc-total" aria-live="polite" aria-atomic="true">
+                        <p><span>الإجمالي الشهري</span> <strong><span id="pc-monthly">{{ $num($calcPlan['price']['shown_monthly']) }}</span> <small>جنيه / شهر</small></strong></p>
+                        <p><span>الإجمالي السنوي</span> <strong><span id="pc-yearly">{{ $num($calcPlan['price']['shown_yearly']) }}</span> <small>جنيه / سنة</small></strong></p>
+                    </div>
+                    <div class="pr-calc-hint" id="pc-hint" hidden>
+                        <p><strong>الباقة الأعلى أوفر لك</strong> <span id="pc-hint-text"></span></p>
+                        <a class="btn btn-gold pr-cta" id="pc-hint-cta" href="{{ $ctaHref }}" data-signup data-plan="" data-kind-of-card="paid" data-upgrade-hint>ابدأ بالباقة الأعلى</a>
+                    </div>
+                    <div class="pr-calc-actions">
+                        <a class="btn btn-navy pr-cta" id="pc-cta" href="{{ $ctaHref }}" data-signup data-plan="{{ $calcPlan['slug'] }}" data-kind-of-card="paid">ابدأ بالباقة دي</a>
+                        <a class="btn pr-btn-line pr-cta" href="{{ $customHref }}" data-custom-request data-source="calculator">اطلب باقة مخصصة</a>
+                    </div>
+                    <p class="pr-note">{{ $vatLine }} الإضافات بتتفعّل مع باقتك بعد التجربة.</p>
+                </div>
+            </div>
+        </div>
+
         <h3 class="pr-sub-title pr-faq-title">أسئلة شائعة</h3>
         <div class="pr-faq">
             @foreach ($faq as $i => [$q, $ans])
@@ -189,12 +265,13 @@
 
         <ul class="pr-foot">
             <li>الأسعار بالجنيه المصري.</li>
-            <li>{{ $catalog['vat_included'] ? 'الأسعار شاملة ضريبة القيمة المضافة.' : 'الأسعار غير شاملة ضريبة القيمة المضافة.' }}</li>
+            <li>{{ $vatLine }}</li>
             <li>الطالب المحسوب هو أي طالب مسجّل في مركزك.</li>
             <li>ميزة "قريباً" معناها إنها قيد التجهيز وغير متاحة الآن.</li>
             @if ($promo['active'] && $promo['ends_at'])<li>{{ $promo['label'] }} لفترة محدودة، حتى {{ $promo['ends_at'] }}.</li>@endif
         </ul>
-        <p class="price-foot">أكتر من {{ $num($maxStudents) }} طالب أو احتياج خاص؟@if ($email) راسلنا على <a href="mailto:{{ $email }}">{{ $email }}</a>@endif</p>
+        <p class="price-foot" id="pr-contact">أكتر من {{ $num($maxStudents) }} طالب أو احتياج خاص؟@if ($email) راسلنا على <a href="mailto:{{ $email }}">{{ $email }}</a>@endif
+            <a class="pr-js-only" href="{{ $customHref }}" data-custom-request data-source="footer">اطلب باقة مخصصة</a></p>
 
         {{-- No JS: the buttons above are plain links; this says how to start without them. --}}
         <p class="pr-nojs" id="signup">لبدء التجربة المجانية فعّل جافاسكربت في متصفحك@if ($email) أو راسلنا على <a href="mailto:{{ $email }}">{{ $email }}</a>@endif.</p>
