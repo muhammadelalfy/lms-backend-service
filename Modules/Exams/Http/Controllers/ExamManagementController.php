@@ -12,6 +12,7 @@ use Modules\Exams\Models\ExamSessionEvent;
 use Modules\Exams\Models\ExamTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Modules\Exams\Events\ExamSessionSubmitted;
 use Modules\Exams\Services\ExamPaperPdfService;
 
 class ExamManagementController extends Controller
@@ -221,6 +222,8 @@ class ExamManagementController extends Controller
             abort_if(in_array($locked->status, ['submitted', 'expired']), 422, 'تم إنهاء هذا الامتحان بالفعل.');
             $locked->update(['status' => 'submitted', 'submitted_at' => now(), 'last_event_at' => now()]);
             $locked->events()->create(['type' => 'submitted', 'occurred_at' => now()]);
+            // After commit: grading assistance (Modules/Ai) prepares the written answers' review.
+            DB::afterCommit(fn () => event(new ExamSessionSubmitted($locked->id)));
         });
         $session = $session->fresh(['template.questions', 'answers', 'events']);
         $this->withoutAnswerKeys($session->template);

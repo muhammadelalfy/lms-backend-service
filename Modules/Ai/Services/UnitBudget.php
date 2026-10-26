@@ -130,6 +130,41 @@ final class UnitBudget
         return true;
     }
 
+    /**
+     * Grading's hard stop: already-queued answers keep being graded past 100% of the cap (so a class
+     * that just submitted is not half graded), until the month's spending reaches the cap plus
+     * `ai.grading.hard_stop_percent` of it.
+     */
+    public function gradingStopped(): bool
+    {
+        $cap = $this->cap();
+        if ($cap === null) {
+            return false;
+        }
+
+        return $this->spent() >= $cap + (int) ceil($cap * (int) config('ai.grading.hard_stop_percent') / 100);
+    }
+
+    /**
+     * Records the units of one grading call. Idempotent by `callKey` (one charge per answer, whatever
+     * the retries).
+     */
+    public function chargeGrading(string $callKey, ?int $userId, int $units, string $model, string $promptVersion): bool
+    {
+        return UsageEntry::query()->insertOrIgnore([
+            'kind' => UsageKind::Grade->value,
+            'job_id' => null,
+            'draft_id' => null,
+            'user_id' => $userId,
+            'units' => $units,
+            'model_id' => mb_substr($model, 0, 120),
+            'prompt_version' => mb_substr($promptVersion, 0, 40),
+            'month' => $this->month(),
+            'call_key' => $callKey,
+            'created_at' => now(),
+        ]) > 0;
+    }
+
     public static function capReached(): CapReached
     {
         return new CapReached('ai_units_monthly', 'بلغ مركزك حد وحدات الذكاء الاصطناعي لهذا الشهر. يمكنك إنشاء الامتحان يدوياً أو ترقية الباقة.');

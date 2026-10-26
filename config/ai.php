@@ -41,6 +41,21 @@ return [
         'warning_percent' => 80,
     ],
 
+    // Grading assistance (S71): one AI suggestion per written answer, the teacher always decides.
+    'grading' => [
+        'timeout' => (int) env('AI_GRADING_TIMEOUT', 60),
+        'max_answer_chars' => 8000,
+        // Below this confidence (or with a suspected injection) the item is marked for attention and
+        // never taken by the bulk accept.
+        'attention_below' => (float) env('AI_GRADING_ATTENTION_BELOW', 0.6),
+        // The bulk accept's default threshold (the teacher confirms the count first).
+        'bulk_accept_min_confidence' => 0.85,
+        'bulk_max' => 200,
+        // At 100% of the monthly cap no new answer is sent to the AI; answers already queued still
+        // run until the month's spending reaches the cap plus this share of it (the hard stop).
+        'hard_stop_percent' => (int) env('AI_GRADING_HARD_STOP_PERCENT', 10),
+    ],
+
     // The antivirus hook: a class implementing Modules\Ai\Contracts\MaterialScanner (ClamAV, a cloud
     // scanner...). The default accepts every file; set it before enabling uploads in production.
     'scanner' => NullMaterialScanner::class,

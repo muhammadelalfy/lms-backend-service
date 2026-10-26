@@ -20,11 +20,11 @@ class ExamResult extends Model {
     /** A result recorded by new code starts as a draft (S6); the column default keeps old code's meaning. */
     protected $attributes = ['status' => 'draft'];
 
-    protected $fillable = ['student_id', 'title', 'score', 'max_score', 'taken_at', 'recorded_by', 'status', 'published_at', 'published_by', 'last_corrected_at'];
+    protected $fillable = ['student_id', 'title', 'score', 'max_score', 'taken_at', 'recorded_by', 'status', 'published_at', 'published_by', 'last_corrected_at', 'session_id', 'score_exact'];
 
     protected function casts(): array
     {
-        return ['taken_at' => 'datetime', 'status' => ExamResultStatus::class, 'published_at' => 'datetime', 'last_corrected_at' => 'datetime'];
+        return ['taken_at' => 'datetime', 'status' => ExamResultStatus::class, 'published_at' => 'datetime', 'last_corrected_at' => 'datetime', 'score_exact' => 'decimal:2'];
     }
 
     public function student(): BelongsTo { return $this->belongsTo(Student::class); }

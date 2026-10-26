@@ -61,6 +61,8 @@ final class CorrectExamResult
 
             $locked->update([
                 ...array_map(fn (array $c) => $c['new'], $changes),
+                // A corrected score is whole marks: the quarter-mark score from grading no longer applies.
+                ...(isset($changes['score']) ? ['score_exact' => null] : []),
                 'status' => ExamResultStatus::Corrected,
                 'last_corrected_at' => $now,
             ]);
