@@ -3,6 +3,12 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      ai_image:
+        description: "AI service image to roll out (default: the latest published one)"
+        required: false
+        default: ghcr.io/muhammadelalfy/lms-ai-service:latest
 
 permissions:
   contents: read
@@ -153,7 +159,7 @@ jobs:
 
       - name: Upload stack definition
         run: |
-          scp -r deploy/{docker-compose.yml,deploy.sh,smoke-test.sh,make-certs.sh,install-origin-cert.sh,nginx} \
+          scp -r deploy/{docker-compose.yml,deploy.sh,deploy-ai.sh,make-ai-env.sh,smoke-test.sh,make-certs.sh,install-origin-cert.sh,nginx} \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/mudarisy/"
 
       - name: Roll out the new image
@@ -162,5 +168,45 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | ssh "$target" "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
           status=0
           ssh "$target" "/opt/mudarisy/deploy.sh API_IMAGE ghcr.io/${{ github.repository_owner }}/mudarisy-api:${{ github.sha }}" || status=$?
+          ssh "$target" "docker logout ghcr.io" || true
+          exit $status
+
+  deploy-ai:
+    name: Deploy AI service
+    # Run it by hand: Actions > CI > Run workflow (branch main). The AI service is deployed apart
+    # from the API so that its release never blocks, or is blocked by, the platform's.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Upload stack definition
+        run: |
+          scp -r deploy/{docker-compose.yml,deploy-ai.sh,make-ai-env.sh} \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/mudarisy/"
+
+      - name: Roll out the AI service
+        run: |
+          target="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | ssh "$target" "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+          status=0
+          ssh "$target" "/opt/mudarisy/deploy-ai.sh '${{ inputs.ai_image }}'" || status=$?
           ssh "$target" "docker logout ghcr.io" || true
           exit $status

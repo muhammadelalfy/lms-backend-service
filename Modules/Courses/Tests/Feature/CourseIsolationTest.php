@@ -28,7 +28,7 @@ class CourseIsolationTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         Sanctum::actingAs($admin);
-        $this->postJson('/api/courses', ['title' => 'دورة المدرسة الأولى'])->assertCreated();
+        $this->postJson('/api/courses', ['title' => 'دورة المركز الأولى'])->assertCreated();
         $course = Course::firstOrFail();
         $course->forceFill(['status' => ContentStatus::Published])->save();
         $student = Student::factory()->create();

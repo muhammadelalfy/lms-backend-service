@@ -15,7 +15,7 @@ final class SchoolContext
     public static function enter(?string $id): School
     {
         $school = $id === null || $id === '' ? null : School::query()->find($id);
-        abort_if($school === null, 404, 'المدرسة غير موجودة.');
+        abort_if($school === null, 404, 'المركز غير موجود.');
         abort_if(($reason = $school->lockedReason()) !== null, 403, $reason);
 
         tenancy()->initialize($school);

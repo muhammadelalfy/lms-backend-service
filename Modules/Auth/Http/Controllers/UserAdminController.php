@@ -167,7 +167,7 @@ class UserAdminController extends Controller
             return;
         }
         $another = User::where('role', 'admin')->where('status', User::STATUS_ACTIVE)->whereNull('disabled_at')->whereKeyNot($target->id)->exists();
-        abort_unless($another, 422, 'لا يمكن إيقاف آخر مشرف نشط في المدرسة.');
+        abort_unless($another, 422, 'لا يمكن إيقاف آخر مشرف نشط في المركز.');
     }
 
     private function present(User $user): array

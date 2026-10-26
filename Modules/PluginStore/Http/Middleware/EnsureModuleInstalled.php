@@ -29,7 +29,7 @@ final class EnsureModuleInstalled
             ->where('status', 'installed')
             ->exists();
 
-        abort_unless($installed, 403, 'هذه الإضافة غير مفعّلة لمدرستك.');
+        abort_unless($installed, 403, 'هذه الإضافة غير مفعّلة لمركزك.');
 
         return $next($request);
     }
