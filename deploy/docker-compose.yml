@@ -84,6 +84,50 @@ services:
       retries: 10
     logging: *logging
 
+  # --- AI service (optional: `docker compose --profile ai ...`; rolled out by deploy-ai.sh) -------
+  # Internal only: no ports are published; Laravel reaches it at http://lms-ai:8001.
+  lms-ai:
+    profiles: [ai]
+    image: ${AI_IMAGE:-ghcr.io/muhammadelalfy/lms-ai-service:latest}
+    env_file: [.env.ai]
+    restart: unless-stopped
+    expose: ["8001"]
+    deploy: { resources: { limits: { memory: 512m } } }
+    depends_on:
+      ai-db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    logging: *logging
+
+  ai-db:
+    profiles: [ai]
+    image: pgvector/pgvector:pg16
+    env_file: [.env.ai]
+    restart: unless-stopped
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=30"]
+    deploy: { resources: { limits: { memory: 384m } } }
+    volumes: [ai-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    logging: *logging
+
+  # Runs the AI jobs (material extraction/ingest) apart from the normal queues: they are slow.
+  ai-worker:
+    <<: *app
+    profiles: [ai]
+    command: ["php", "artisan", "queue:work", "redis", "--queue=ai", "--sleep=2", "--tries=3", "--timeout=170", "--max-time=3600"]
+    stop_grace_period: 180s
+    deploy: { resources: { limits: { memory: 256m } } }
+    healthcheck: { test: ["CMD-SHELL", "kill -0 1"], interval: 30s }
+
   web:
     image: ${WEB_IMAGE:-mudarisy-web:local}
     restart: unless-stopped
@@ -118,3 +162,4 @@ volumes:
   db: {}
   storage: {}
   redis: {}
+  ai-db: {}

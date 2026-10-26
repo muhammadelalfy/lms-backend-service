@@ -126,3 +126,20 @@ round trip: `DEPLOY_SKIP_PULL=1 ./deploy.sh API_IMAGE <the image already running
 
 - Changing the `lb` service definition itself (ports, mounts) recreates it: about a second of refused connections.
 - LiveKit (calls) is not in this stack yet; `livekit.yaml` is the starting point.
+
+## AI service (optional)
+
+`lms-ai-service` (FastAPI + pgvector) runs beside the stack under the compose profile `ai`, on the internal
+network only (no published ports); Laravel reaches it at `http://lms-ai:8001`.
+
+| Piece | What |
+|---|---|
+| `lms-ai`, `ai-db` | The service and its pgvector database (`ai-db` volume). Image: `ghcr.io/<owner>/lms-ai-service`, published by that repo's CI on every push to `main`. |
+| `ai-worker` | A Laravel queue worker for the slow `ai` queue (`--timeout=170`; `REDIS_QUEUE_RETRY_AFTER` is 200). |
+| `make-ai-env.sh` | Creates `.env.ai` (service token, DB password, Redis for shared budgets) and adds `AI_SERVICE_URL`, `AI_SERVICE_TOKEN`, `REDIS_QUEUE_RETRY_AFTER` to `.env.production`, only when missing. |
+| `deploy-ai.sh <image>` | Pulls, starts, health-checks (`/ready`) and puts the previous image back on failure. Never touches the API, web or load balancer. |
+
+Roll it out from GitHub: **Actions → CI → Run workflow** on `main` (input `ai_image`, default `:latest`).
+First time only, on the server, put the provider keys into `/opt/mudarisy/.env.ai`
+(`ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`); with no key the service runs on offline fakes.
+This host has 2 GB of RAM: use the hosted embeddings API, not the local model.
