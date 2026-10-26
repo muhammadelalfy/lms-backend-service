@@ -464,6 +464,7 @@
         </form>
     </dialog>
     @include('landing._signup')
+    @include('landing._custom')
 @endunless
 <script src="{{ asset('vendor/gsap/gsap.min.js') }}"></script>
 <script src="{{ asset('vendor/gsap/ScrollTrigger.min.js') }}"></script>
