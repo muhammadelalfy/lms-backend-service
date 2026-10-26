@@ -22,6 +22,25 @@ return [
         'embed_model' => env('AI_EMBED_MODEL', 'bge-m3'),
     ],
 
+    // Exam generation (blueprint -> draft). The AI service writes at most 10 questions per call, so
+    // longer exams are generated in batches; verification takes up to 20 questions per call.
+    'generation' => [
+        'max_materials' => (int) env('AI_MAX_JOB_MATERIALS', 10),
+        'max_questions' => (int) env('AI_MAX_EXAM_QUESTIONS', 100),
+        'batch_size' => 10,
+        'verify_batch_size' => 20,
+        // Existing question-bank prompts sent with verification for the (informational) overlap check.
+        'bank_questions' => (int) env('AI_VERIFY_BANK_QUESTIONS', 100),
+        'generate_timeout' => (int) env('AI_GENERATE_TIMEOUT', 180),
+    ],
+
+    // AI units (the plan's monthly cap `ai_units_monthly`). A job reserves its estimate times this
+    // margin (never more than what is left) before it starts, and can never spend past its reservation.
+    'units' => [
+        'reserve_margin' => (float) env('AI_UNITS_RESERVE_MARGIN', 1.2),
+        'warning_percent' => 80,
+    ],
+
     // The antivirus hook: a class implementing Modules\Ai\Contracts\MaterialScanner (ClamAV, a cloud
     // scanner...). The default accepts every file; set it before enabling uploads in production.
     'scanner' => NullMaterialScanner::class,

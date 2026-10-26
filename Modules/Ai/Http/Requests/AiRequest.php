@@ -19,7 +19,12 @@ abstract class AiRequest extends FormRequest
 
     protected function failedAuthorization(): never
     {
-        throw new AuthorizationException('لا تملك صلاحية هذه المادة.');
+        throw new AuthorizationException($this->deniedMessage());
+    }
+
+    protected function deniedMessage(): string
+    {
+        return 'لا تملك صلاحية هذه المادة.';
     }
 
     protected function allowed(bool $role): bool
