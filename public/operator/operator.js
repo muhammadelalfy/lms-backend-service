@@ -363,6 +363,76 @@
             .catch(function (err) { busy(button, false); fail(deleteDlg, err); });
     });
 
+    // ---- plan requests inbox ------------------------------------------------------------------
+    var REQ_TYPE = { custom: 'باقة مخصصة', upgrade: 'ترقية', lead: 'تواصل' };
+    var REQ_STATUS = { 'new': 'جديد', contacted: 'تم التواصل', closed: 'مغلق' };
+    var AUDIENCE = { solo: 'مدرس فردي', group: 'مجموعة مدرسين', center: 'سنتر دروس' };
+    state.reqFilter = 'new';
+
+    function loadRequests() {
+        var query = state.reqFilter ? '?status=' + encodeURIComponent(state.reqFilter) : '';
+        return api('/plan-requests' + query).then(function (body) {
+            $('#req-error').hidden = true;
+            var counts = (body.meta && body.meta.counts) || {};
+            Array.prototype.forEach.call(document.querySelectorAll('[data-count]'), function (n) {
+                var c = counts[n.getAttribute('data-count')];
+                n.textContent = c ? '(' + c + ')' : '';
+            });
+            renderRequests(body.data || []);
+        }).catch(function (err) {
+            if (err.status === 401) { signOut(err.message); return; }
+            var box = $('#req-error'); box.hidden = false; box.textContent = err.message;
+        });
+    }
+
+    function renderRequests(rows) {
+        var table = $('#req-table');
+        table.replaceChildren();
+        $('#req-empty').hidden = rows.length > 0;
+        if (!rows.length) return;
+        table.appendChild(el('div', { class: 'req-row head', role: 'row' },
+            el('div', { text: 'صاحب الطلب' }), el('div', { text: 'النوع' }), el('div', { text: 'الاحتياج' }), el('div', { text: 'الحالة' })));
+        rows.forEach(function (r) {
+            var who = el('div', {}, el('b', { text: r.name }));
+            if (r.phone) who.appendChild(el('small', {}, el('a', { href: 'tel:' + r.phone, dir: 'ltr', text: r.phone })));
+            if (r.email) who.appendChild(el('small', { dir: 'ltr', text: r.email }));
+            if (r.org_name) who.appendChild(el('small', { text: r.org_name }));
+
+            var kind = el('div', {}, el('b', { text: REQ_TYPE[r.type] || r.type }));
+            if (r.school_id) kind.appendChild(el('small', { dir: 'ltr', text: r.school_id }));
+            if (r.plan_slug) kind.appendChild(el('small', { text: 'الباقة: ' + planLabel(r.plan_slug) }));
+            if (r.audience) kind.appendChild(el('small', { text: AUDIENCE[r.audience] || r.audience }));
+            if (r.students_estimate) kind.appendChild(el('small', { text: r.students_estimate + ' طالب تقريباً' }));
+
+            var select = el('select', { 'aria-label': 'حالة طلب ' + r.name, onchange: function (e) { moveRequest(r, e.target.value); } });
+            Object.keys(REQ_STATUS).forEach(function (key) {
+                var option = el('option', { value: key, text: REQ_STATUS[key] });
+                if (key === r.status) option.selected = true;
+                select.appendChild(option);
+            });
+            var when = el('small', { text: r.created_at ? new Date(r.created_at).toLocaleString('ar-EG') : '' });
+
+            table.appendChild(el('div', { class: 'req-row', role: 'row' }, who, kind, el('div', { class: 'msg', text: r.message }), el('div', {}, select, when)));
+        });
+    }
+
+    function moveRequest(r, status) {
+        api('/plan-requests/' + encodeURIComponent(r.id), { method: 'PATCH', body: { status: status } })
+            .then(function () { toast('تم تحديث حالة الطلب.'); return loadRequests(); })
+            .catch(function (err) { if (err.status === 401) signOut(err.message); else toast(err.message, true); });
+    }
+
+    $('#req-filters').addEventListener('click', function (e) {
+        var pill = e.target.closest('[data-req-filter]');
+        if (!pill) return;
+        state.reqFilter = pill.getAttribute('data-req-filter');
+        Array.prototype.forEach.call(document.querySelectorAll('#req-filters .pill'), function (p) { p.classList.toggle('is-on', p === pill); });
+        loadRequests();
+    });
+    // Loading the centers also refreshes the inbox (sign-in, the refresh button, after every change).
+    var loadSchools = load;
+    load = function () { return loadSchools().then(function (ok) { if (ok) loadRequests(); return ok; }); };
+
     // ---- start ----------------------------------------------------------------------------
     if (state.token) { load().then(function (ok) { if (!ok && gate.hidden && app.hidden) signOut(''); }); } else { $('#token').focus(); }
 })();

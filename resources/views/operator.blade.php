@@ -64,6 +64,22 @@
         <p class="note error" id="list-error" role="alert" hidden></p>
         <div class="table" id="table" role="table" aria-label="المراكز"></div>
         <p class="empty" id="empty" hidden>لا توجد مراكز مطابقة.</p>
+
+        {{-- Plan requests: custom-plan leads from the landing and upgrade requests from centers. --}}
+        <section class="requests" id="requests" aria-labelledby="requests-title">
+            <div class="tools">
+                <h2 id="requests-title">طلبات الباقات</h2>
+                <div class="filters" role="group" aria-label="حالة الطلب" id="req-filters">
+                    <button type="button" class="pill is-on" data-req-filter="new">جديدة <span data-count="new"></span></button>
+                    <button type="button" class="pill" data-req-filter="contacted">تم التواصل <span data-count="contacted"></span></button>
+                    <button type="button" class="pill" data-req-filter="closed">مغلقة <span data-count="closed"></span></button>
+                    <button type="button" class="pill" data-req-filter="">الكل</button>
+                </div>
+            </div>
+            <p class="note error" id="req-error" role="alert" hidden></p>
+            <div class="table" id="req-table" role="table" aria-label="طلبات الباقات"></div>
+            <p class="empty" id="req-empty" hidden>لا توجد طلبات في هذه الحالة.</p>
+        </section>
     </main>
 </div>
 

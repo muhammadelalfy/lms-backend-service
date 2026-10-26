@@ -2,8 +2,11 @@
 
 namespace Modules\Tenancy\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Tenancy\Console\AdoptSchool;
@@ -27,6 +30,8 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
  */
 final class SchoolsServiceProvider extends ServiceProvider
 {
+    public const TOO_MANY = 'طلبات كتير في وقت قصير، جرّب بعد شوية.';
+
     public function register(): void
     {
         $this->commands([CreateSchool::class, AdoptSchool::class, ListSchools::class, SetSchoolStatus::class, DispatchToSchools::class]);
@@ -35,6 +40,7 @@ final class SchoolsServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->bootEvents();
+        $this->rateLimiters();
         $this->mapRoutes();
         $this->prioritiseTenancyMiddleware();
 
@@ -62,6 +68,15 @@ final class SchoolsServiceProvider extends ServiceProvider
 
         Event::listen(Events\TenancyInitialized::class, Listeners\BootstrapTenancy::class);
         Event::listen(Events\TenancyEnded::class, Listeners\RevertToCentralContext::class);
+    }
+
+    /** Limits of the public and plan endpoints, answered in Arabic. */
+    private function rateLimiters(): void
+    {
+        $tooMany = fn () => response()->json(['message' => self::TOO_MANY], 429);
+
+        // Custom-plan leads from the landing: 5 per visitor per hour.
+        RateLimiter::for('plan-requests', fn (Request $request) => Limit::perHour(5)->by('plan-requests:'.$request->ip())->response($tooMany));
     }
 
     private function mapRoutes(): void

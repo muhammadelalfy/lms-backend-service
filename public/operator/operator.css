@@ -145,3 +145,14 @@ input[type="checkbox"] { width: 20px; min-height: 20px; height: 20px; accent-col
     .dlg-card { padding: 20px 18px 18px; }
     .gate-card { padding: 28px 22px 22px; }
 }
+
+/* Plan requests inbox */
+.requests { display: grid; gap: 12px; }
+.requests h2 { margin: 0; font-size: 22px; flex: 1 1 auto; }
+.req-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 2.4fr) 160px; gap: 12px; align-items: start; padding: 14px 20px; border-top: 1px solid var(--line); }
+.req-row:first-child { border-top: 0; }
+.req-row.head { background: var(--navy-50); color: var(--muted); font-size: 14px; font-weight: 700; padding-block: 10px; }
+.req-row small { display: block; color: var(--muted); }
+.req-row .msg { white-space: pre-line; overflow-wrap: anywhere; }
+.req-row select { min-height: 40px; }
+@media (max-width: 900px) { .req-row { grid-template-columns: 1fr; } .req-row.head { display: none; } }
