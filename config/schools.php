@@ -42,6 +42,16 @@ return [
     // after `grace_days` it cannot send SMS/WhatsApp (owner decision: block SMS only).
     'email_verification' => ['link_hours' => 48, 'grace_days' => 3],
 
+    // Where each welcome-checklist step takes the admin in the web app.
+    'onboarding' => ['links' => [
+        'verify_email' => '/dashboard?tab=settings&section=email',
+        'add_logo' => '/dashboard?tab=settings&section=branding',
+        'create_course' => '/dashboard?tab=courses',
+        'add_teacher' => '/dashboard?tab=accounts',
+        'enroll_first_student' => '/dashboard?tab=students',
+        'set_payment' => '/dashboard?tab=settings&section=payments',
+    ]],
+
     'pricing' => [
         'currency' => 'EGP',
         'vat_included' => true,  // owner decision: listed prices include VAT

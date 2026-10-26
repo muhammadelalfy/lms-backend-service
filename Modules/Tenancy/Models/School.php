@@ -24,6 +24,7 @@ use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
  * @property string|null $secondary_color like #1F4E8C (kept in `data`)
  * @property bool|null $email_verification_required set at self sign-up: the owner must confirm their email (kept in `data`)
  * @property string|null $owner_email_verified_at when an admin of the center confirmed their email (kept in `data`)
+ * @property string|null $onboarding_dismissed_at when the admin hid the welcome checklist (kept in `data`)
  * @property string|null $kind center | group | solo, as the owner described themselves at sign-up (kept in `data`)
  */
 class School extends BaseTenant implements TenantWithDatabase
