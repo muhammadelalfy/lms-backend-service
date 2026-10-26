@@ -82,6 +82,8 @@ class EmailVerificationTest extends TestCase
 
     public function test_a_new_sign_up_leaves_the_admin_unconfirmed_and_mails_a_signed_48_hour_link(): void
     {
+        // The link takes the scheme and port of the app's own URL; pin it so CI's APP_URL (with :8000) does not matter.
+        config(['app.url' => 'http://localhost']);
         Notification::fake();
         $school = $this->signUp();
 
