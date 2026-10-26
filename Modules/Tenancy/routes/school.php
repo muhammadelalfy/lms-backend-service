@@ -6,6 +6,8 @@ use Modules\Tenancy\Http\Controllers\MyPlanController;
 
 Route::get('branding', [BrandingController::class, 'show']);
 Route::put('branding', [BrandingController::class, 'update'])->middleware('auth:sanctum');
+Route::post('branding/logo', [BrandingController::class, 'uploadLogo'])->middleware(['auth:sanctum', 'throttle:20,1']);
+Route::delete('branding/logo', [BrandingController::class, 'deleteLogo'])->middleware('auth:sanctum');
 
 // "باقتي": the center's own plan and usage, and a request for a bigger one (admin only).
 Route::middleware('auth:sanctum')->group(function () {

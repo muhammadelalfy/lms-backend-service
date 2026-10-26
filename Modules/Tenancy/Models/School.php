@@ -20,6 +20,8 @@ use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
  * @property int|null $max_students
  * @property string|null $brand_color the academy's color, like #1F4E8C (kept in `data`)
  * @property string|null $logo_url (kept in `data`)
+ * @property string|null $logo_path the uploaded logo on the branding disk (kept in `data`)
+ * @property string|null $secondary_color like #1F4E8C (kept in `data`)
  * @property string|null $kind center | group | solo, as the owner described themselves at sign-up (kept in `data`)
  */
 class School extends BaseTenant implements TenantWithDatabase
