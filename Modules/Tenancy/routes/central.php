@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Tenancy\Http\Controllers\OperatorDashboardController;
+use Modules\Tenancy\Http\Controllers\OperatorPlanRequestController;
+use Modules\Tenancy\Http\Controllers\PlanRequestController;
 use Modules\Tenancy\Http\Controllers\PlansController;
 use Modules\Tenancy\Http\Controllers\SchoolController;
 use Modules\Tenancy\Http\Controllers\SchoolLookupController;
@@ -20,6 +22,8 @@ foreach (config('tenancy.central_domains') as $domain) {
             Route::patch('/schools/{school}', [SchoolController::class, 'update']);
             Route::post('/schools/{school}/domains', [SchoolController::class, 'addDomain']);
             Route::delete('/schools/{school}', [SchoolController::class, 'destroy']);
+            Route::get('/plan-requests', [OperatorPlanRequestController::class, 'index']);
+            Route::patch('/plan-requests/{planRequest}', [OperatorPlanRequestController::class, 'update']);
         });
 
     // The landing page's "enter your school code" box: public, central addresses only, and
@@ -32,6 +36,11 @@ foreach (config('tenancy.central_domains') as $domain) {
     Route::middleware(['api', 'throttle:60,1'])
         ->domain($domain)
         ->get('api/plans', PlansController::class);
+
+    // The landing's custom-plan form: public, a few per visitor per hour (limiter `plan-requests`).
+    Route::middleware(['api', 'throttle:plan-requests'])
+        ->domain($domain)
+        ->post('api/plan-requests', PlanRequestController::class);
 
     // The public sign-up: a trial academy of one's own. Few per visitor per hour.
     Route::middleware(['api', 'throttle:5,60'])

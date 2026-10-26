@@ -10,18 +10,21 @@ use Illuminate\Validation\Rules\Password;
 use Modules\Auth\Models\User;
 use Modules\Auth\Services\AuditTrail;
 use Modules\Auth\Services\DemoAccounts;
+use Modules\Tenancy\Services\Branding;
 
 /** A teacher asks for an account; they can sign in only after the school's admin approves it. */
 class TeacherRegistrationController extends Controller
 {
     /** What the sign-in pages may offer on this school. */
-    public function options(DemoAccounts $demo)
+    public function options(DemoAccounts $demo, Branding $branding)
     {
         return [
             'teacher_registration' => true,
             'password_reset' => PasswordResetController::enabled(),
             // The roles the "try it" buttons may sign in as; empty on a school without demo logins.
             'demo_logins' => DemoLoginController::roles($demo),
+            // The center's look for the sign-in page and the app shell (nulls = use the app's defaults).
+            'branding' => $branding->cached(tenant()),
         ];
     }
 

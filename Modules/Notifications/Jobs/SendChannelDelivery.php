@@ -52,6 +52,12 @@ class SendChannelDelivery implements ShouldQueue
         if ($delivery === null || $delivery->state !== 'queued') {
             return;
         }
+        // A center whose owner never confirmed their email sends no SMS/WhatsApp after the grace days.
+        if (tenant()?->smsBlockedForUnverifiedEmail()) {
+            $this->skip($delivery, 'email_unverified');
+
+            return;
+        }
 
         $contact = ContactChannel::query()
             ->where(['user_id' => $delivery->user_id, 'channel' => $delivery->channel])

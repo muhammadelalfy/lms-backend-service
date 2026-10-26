@@ -8,6 +8,7 @@ use Illuminate\Validation\Rule;
 use Modules\Auth\Services\DemoAccounts;
 use Modules\Students\Models\Student;
 use Modules\Tenancy\Models\School;
+use Modules\Tenancy\Services\PlanUsage;
 use Modules\Tenancy\Services\SchoolProvisioner;
 
 /**
@@ -49,7 +50,12 @@ class SchoolController extends Controller
         return response()->json($this->present($provisioner->open($data)), 201);
     }
 
-    public function update(Request $request, School $school)
+    /**
+     * Changes a school. `activate: true` makes the plan a paid one (the trial ends). A plan or limit
+     * smaller than what the school already uses is saved anyway, with `warnings` [{cap, limit, used}]:
+     * nothing is removed, new additions are refused until the school is under its limit again.
+     */
+    public function update(Request $request, School $school, PlanUsage $usage)
     {
         $settings = array_keys(config('schools.settings'));
         $data = $request->validate([
@@ -61,12 +67,21 @@ class SchoolController extends Controller
             'demo_logins' => 'sometimes|boolean',
             'settings' => 'sometimes|array',
             'settings.*' => 'nullable|string|max:500',
+            'activate' => 'sometimes|boolean',
+            'limits' => 'sometimes|array:'.implode(',', PlanUsage::CAPS),
+            'limits.*' => 'nullable|integer|min:0|max:10000000',
         ]);
         foreach (array_keys($data['settings'] ?? []) as $key) {
             abort_unless(in_array($key, $settings, true), 422, "إعداد غير معروف: {$key}");
         }
 
-        $school->fill(collect($data)->except('settings')->all());
+        $school->fill(collect($data)->except(['settings', 'activate', 'limits'])->all());
+        if ($data['activate'] ?? false) {
+            $school->trial_ends_at = null;
+        }
+        if (array_key_exists('limits', $data)) {
+            $school->setAttribute('limits', array_merge((array) ($school->getAttributes()['limits'] ?? []), $data['limits']));
+        }
         foreach ($data['settings'] ?? [] as $key => $value) {
             $school->setAttribute($key, $value);
         }
@@ -76,7 +91,22 @@ class SchoolController extends Controller
             $school->run(fn () => app(DemoAccounts::class)->ensure());
         }
 
-        return $this->present($school->fresh('domains'));
+        $school = $school->fresh('domains');
+        $changesCaps = array_key_exists('plan', $data) || array_key_exists('limits', $data) || array_key_exists('max_students', $data);
+
+        return $this->present($school) + ['warnings' => $changesCaps ? $this->warningsOf($school, $usage) : []];
+    }
+
+    /** The caps the school is now over, or none when its database cannot be read. */
+    private function warningsOf(School $school, PlanUsage $usage): array
+    {
+        try {
+            return $usage->warnings($school);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return [];
+        }
     }
 
     /** Another address for the school, e.g. its own website. */
@@ -120,6 +150,10 @@ class SchoolController extends Controller
             'trial_ends_at' => $school->trial_ends_at?->toISOString(),
             'max_students' => $school->max_students,
             'student_limit' => $school->studentLimit(),
+            'limits' => $school->limits(),
+            'kind' => $school->kind,
+            'desired_plan' => $school->desired_plan,
+            'preferred_billing' => $school->preferred_billing,
             'demo_logins' => (bool) $school->demo_logins,
             'domains' => $school->domains->pluck('domain')->values(),
             // Which settings are set, never their values.

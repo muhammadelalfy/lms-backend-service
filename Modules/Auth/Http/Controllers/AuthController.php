@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Modules\Auth\Actions\SendEmailVerification;
 use Modules\Auth\Models\User;
 
 class AuthController extends Controller
@@ -45,7 +46,7 @@ class AuthController extends Controller
     }
 
     /** Updates the signed-in account's own name and email. */
-    public function updateProfile(Request $request)
+    public function updateProfile(Request $request, SendEmailVerification $verification)
     {
         $user = $request->user();
         abort_if($user->isDemo(), 403, 'الحساب التجريبي لا يمكن تعديل بياناته.');
@@ -53,7 +54,16 @@ class AuthController extends Controller
             'name' => 'required|string|max:120',
             'email' => ['required', 'email', 'max:190', Rule::unique('users', 'email')->ignore($user->id)],
         ]);
-        $user->update($data);
+        $user->fill($data);
+        // A new address is unconfirmed; an admin whose center still waits for a confirmed email gets a new link.
+        $changedEmail = $user->isDirty('email');
+        if ($changedEmail) {
+            $user->forceFill(['email_verified_at' => null]);
+        }
+        $user->save();
+        if ($changedEmail && $user->isAnyRole('admin') && tenant()?->awaitsEmailVerification()) {
+            $verification->handle(tenant(), $user);
+        }
 
         return $user->fresh()->load('studentAccount.student');
     }

@@ -57,6 +57,20 @@ return [
     'trial_max_plan' => 't3',    // a trial never gets more than this plan's limits
     'default_plan' => 't1',      // used by the CLI/operator when none is given
 
+    // A self sign-up's admin confirms their email with a signed link; until then the center works, but
+    // after `grace_days` it cannot send SMS/WhatsApp (owner decision: block SMS only).
+    'email_verification' => ['link_hours' => 48, 'grace_days' => 3],
+
+    // Where each welcome-checklist step takes the admin in the web app.
+    'onboarding' => ['links' => [
+        'verify_email' => '/dashboard?tab=settings&section=email',
+        'add_logo' => '/dashboard?tab=settings&section=branding',
+        'create_course' => '/dashboard?tab=courses',
+        'add_teacher' => '/dashboard?tab=accounts',
+        'enroll_first_student' => '/dashboard?tab=students',
+        'set_payment' => '/dashboard?tab=settings&section=payments',
+    ]],
+
     'pricing' => [
         'currency' => 'EGP',
         'vat_included' => true,  // owner decision: listed prices include VAT

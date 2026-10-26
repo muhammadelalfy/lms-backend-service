@@ -119,6 +119,31 @@ class PlanCatalog
         return $this->tier($chosen) <= $this->tier($max) ? $chosen : $max;
     }
 
+    /**
+     * The plan to offer a center on [$slug]: the next public tier, or for a legacy plan the first public
+     * plan that holds more students. Null at the top (or on an unlimited legacy plan).
+     */
+    public function nextPlan(string $slug, ?int $studentLimit = null): ?array
+    {
+        $tier = $this->tier($slug);
+        foreach ($this->publicPlans() as $plan) {
+            $fits = $tier > 0
+                ? $plan['tier'] > $tier
+                : $studentLimit !== null && ($plan['limits']['students'] === null || $plan['limits']['students'] > $studentLimit);
+            if ($fits) {
+                return $plan;
+            }
+        }
+
+        return null;
+    }
+
+    /** The name of any catalog plan, legacy ones included; the slug itself when unknown. */
+    public function label(string $slug): string
+    {
+        return (string) config("schools.plans.{$slug}.label", $slug);
+    }
+
     public function tier(string $slug): int
     {
         return (int) config("schools.plans.{$slug}.tier", 0);

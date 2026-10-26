@@ -6,7 +6,7 @@ namespace Modules\Tenancy\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-/** The academy's admin changes how the academy looks. */
+/** The center's admin changes how the center looks. */
 class UpdateBrandingRequest extends FormRequest
 {
     public function authorize(): bool
@@ -19,6 +19,8 @@ class UpdateBrandingRequest extends FormRequest
         return [
             'name' => ['sometimes', 'string', 'min:2', 'max:120'],
             'brand_color' => ['sometimes', 'nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'primary_color' => ['sometimes', 'nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'secondary_color' => ['sometimes', 'nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'logo_url' => ['sometimes', 'nullable', 'url:https', 'max:500'],
         ];
     }
@@ -27,6 +29,8 @@ class UpdateBrandingRequest extends FormRequest
     {
         return [
             'brand_color.regex' => 'اللون يكتب هكذا: #1F4E8C',
+            'primary_color.regex' => 'اللون يكتب هكذا: #1F4E8C',
+            'secondary_color.regex' => 'اللون يكتب هكذا: #1F4E8C',
             'logo_url.url' => 'رابط الشعار يجب أن يبدأ بـ https.',
         ];
     }

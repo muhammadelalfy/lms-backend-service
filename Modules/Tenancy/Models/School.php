@@ -20,6 +20,11 @@ use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
  * @property int|null $max_students
  * @property string|null $brand_color the academy's color, like #1F4E8C (kept in `data`)
  * @property string|null $logo_url (kept in `data`)
+ * @property string|null $logo_path the uploaded logo on the branding disk (kept in `data`)
+ * @property string|null $secondary_color like #1F4E8C (kept in `data`)
+ * @property bool|null $email_verification_required set at self sign-up: the owner must confirm their email (kept in `data`)
+ * @property string|null $owner_email_verified_at when an admin of the center confirmed their email (kept in `data`)
+ * @property string|null $onboarding_dismissed_at when the admin hid the welcome checklist (kept in `data`)
  * @property string|null $kind center | group | solo, as the owner described themselves at sign-up (kept in `data`)
  */
 class School extends BaseTenant implements TenantWithDatabase
@@ -124,6 +129,30 @@ class School extends BaseTenant implements TenantWithDatabase
         ));
 
         return collect($keys)->mapWithKeys(fn (string $key) => [$key => $this->limit($key)])->all();
+    }
+
+    /** Whether the center still waits for its admin to confirm their email (only self sign-ups are asked). */
+    public function awaitsEmailVerification(): bool
+    {
+        return (bool) $this->email_verification_required && $this->owner_email_verified_at === null;
+    }
+
+    /** From when an unconfirmed email stops SMS/WhatsApp sending; null when it never will. */
+    public function smsBlockedFrom(): ?Carbon
+    {
+        if (! $this->awaitsEmailVerification()) {
+            return null;
+        }
+
+        return ($this->created_at ?? now())->copy()->addDays((int) config('schools.email_verification.grace_days', 3));
+    }
+
+    /** SMS and WhatsApp cost money: a center whose owner never confirmed their email cannot send them after the grace days. */
+    public function smsBlockedForUnverifiedEmail(): bool
+    {
+        $from = $this->smsBlockedFrom();
+
+        return $from !== null && ! $from->isFuture();
     }
 
     /** The settings the school may override (payment, SMS, WhatsApp). */
