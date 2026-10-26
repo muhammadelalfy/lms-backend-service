@@ -14,6 +14,7 @@ use Modules\Ai\DTOs\ExtractedSection;
 use Modules\Ai\DTOs\IngestResult;
 use Modules\Ai\Exceptions\AiException;
 use Modules\Ai\Support\FailureReason;
+use Modules\Ai\Support\JobError;
 
 /**
  * The only door to lms-ai-service. Bearer service token, the school id in X-Center-Id (taken from the
@@ -106,6 +107,113 @@ class AiClient
         );
 
         return (int) ($response->json('deleted_chunks') ?? 0);
+    }
+
+    /**
+     * The cost of a blueprint on the given materials, without any LLM call. Safe to retry.
+     *
+     * @param  array{blueprint: array, material_ids: list<string>, section_ids: list<int>|null}  $payload
+     * @return array{units: int, input_tokens: int, output_tokens: int, breakdown: array{generate: int, verify: int}, supported_questions: int, warnings: list<string>}
+     *
+     * @throws AiException
+     */
+    public function estimate(array $payload): array
+    {
+        $body = $this->examCall('/v1/exams/estimate', $payload, (float) config('services.ai.timeout'), retry: true);
+        if (! isset($body['units'])) {
+            throw $this->badAnswer();
+        }
+
+        return [
+            'units' => (int) $body['units'],
+            'input_tokens' => (int) ($body['input_tokens'] ?? 0),
+            'output_tokens' => (int) ($body['output_tokens'] ?? 0),
+            'breakdown' => ['generate' => (int) ($body['breakdown']['generate'] ?? 0), 'verify' => (int) ($body['breakdown']['verify'] ?? 0)],
+            'supported_questions' => (int) ($body['supported_questions'] ?? 0),
+            'warnings' => array_values(array_filter((array) ($body['warnings'] ?? []), 'is_string')),
+        ];
+    }
+
+    /**
+     * Writes up to 10 questions. Costs units, so it is never retried here: the queued job retries it.
+     *
+     * @return array{prompt_version: string, model: string, units_used: int, supported: bool, partial: bool, questions: list<array>, shortfall: list<array>}
+     *
+     * @throws AiException
+     */
+    public function generate(array $payload): array
+    {
+        $body = $this->examCall('/v1/exams/generate', $payload, (float) config('ai.generation.generate_timeout'));
+        if (! is_array($body['questions'] ?? null)) {
+            throw $this->badAnswer();
+        }
+
+        return [
+            'prompt_version' => (string) ($body['prompt_version'] ?? ''),
+            'model' => (string) ($body['model'] ?? ''),
+            'units_used' => max(0, (int) ($body['units_used'] ?? 0)),
+            'supported' => (bool) ($body['supported'] ?? false),
+            'partial' => (bool) ($body['partial'] ?? false),
+            'questions' => array_values(array_filter($body['questions'], fn ($q) => is_array($q) && isset($q['type'], $q['prompt']))),
+            'shortfall' => array_values(array_filter((array) ($body['shortfall'] ?? []), 'is_array')),
+        ];
+    }
+
+    /**
+     * The independent verification pass over up to 20 questions (chunk text is looked up by the service).
+     *
+     * @return array{prompt_version: string, model: string, units_used: int, results: list<array>}
+     *
+     * @throws AiException
+     */
+    public function verify(array $payload): array
+    {
+        $body = $this->examCall('/v1/exams/verify', $payload, (float) config('ai.generation.generate_timeout'));
+        if (! is_array($body['results'] ?? null)) {
+            throw $this->badAnswer();
+        }
+
+        return [
+            'prompt_version' => (string) ($body['prompt_version'] ?? ''),
+            'model' => (string) ($body['model'] ?? ''),
+            'units_used' => max(0, (int) ($body['units_used'] ?? 0)),
+            'results' => array_values(array_filter($body['results'], fn ($r) => is_array($r) && isset($r['ref']))),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     *
+     * @throws AiException
+     */
+    private function examCall(string $path, array $payload, float $timeout, bool $retry = false): array
+    {
+        try {
+            $response = $this->http($timeout, $retry)->post($path, $payload);
+        } catch (ConnectionException) {
+            throw new AiException(JobError::AI_UNAVAILABLE, true, null, JobError::message(JobError::AI_UNAVAILABLE));
+        }
+        $status = $response->status();
+        if (! $response->successful()) {
+            $code = $response->json('code');
+            $message = $response->json('message');
+            logger()->warning('AI service refused an exam call', ['path' => $path, 'status' => $status, 'code' => is_string($code) ? $code : null]);
+
+            if (in_array($status, self::TRANSIENT, true) || $status === 401 || $status === 403) {
+                throw new AiException(JobError::AI_UNAVAILABLE, in_array($status, self::TRANSIENT, true), $status, JobError::message(JobError::AI_UNAVAILABLE));
+            }
+            $code = is_string($code) && preg_match('/^[a-z_]{1,40}$/', $code) ? $code : JobError::AI_REJECTED;
+
+            throw new AiException($code, false, $status, is_string($message) && $message !== '' ? mb_substr($message, 0, 300) : JobError::message($code));
+        }
+        $body = $response->json();
+
+        return is_array($body) ? $body : throw $this->badAnswer();
+    }
+
+    private function badAnswer(): AiException
+    {
+        return new AiException(JobError::AI_UNAVAILABLE, false, null, JobError::message(JobError::AI_UNAVAILABLE));
     }
 
     private function http(float $timeout, bool $retry = false): PendingRequest

@@ -10,6 +10,7 @@ use Modules\Ai\Enums\QuestionType;
 use Modules\Ai\Models\ExamBlueprint;
 use Modules\Ai\Models\Material;
 use Modules\Ai\Models\MaterialSection;
+use Modules\Ai\Support\Taxonomy;
 
 /**
  * The fields of a blueprint, their rules and the checks across fields (percentages sum to 100,
@@ -19,10 +20,6 @@ use Modules\Ai\Models\MaterialSection;
  */
 trait DescribesBlueprint
 {
-    public const DIFFICULTIES = ['easy', 'medium', 'hard'];
-
-    public const BLOOM = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'];
-
     /** @return array<string, mixed> */
     protected function blueprintRules(bool $partial): array
     {
@@ -39,9 +36,9 @@ trait DescribesBlueprint
             'outcomes.*.id' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9_-]+$/', 'distinct'],
             'outcomes.*.text' => ['required', 'string', 'max:500'],
             'outcomes_text' => ['sometimes', 'nullable', 'string', 'max:25000', 'prohibits:outcomes'],
-            'difficulty_mix' => ['sometimes', 'nullable', 'array:'.implode(',', self::DIFFICULTIES)],
+            'difficulty_mix' => ['sometimes', 'nullable', 'array:'.implode(',', Taxonomy::DIFFICULTIES)],
             'difficulty_mix.*' => ['numeric', 'min:0', 'max:100'],
-            'bloom_mix' => ['sometimes', 'nullable', 'array:'.implode(',', self::BLOOM)],
+            'bloom_mix' => ['sometimes', 'nullable', 'array:'.implode(',', Taxonomy::BLOOM)],
             'bloom_mix.*' => ['numeric', 'min:0', 'max:100'],
             'types' => [$required, 'array', 'min:1', 'max:5'],
             'types.*.type' => ['required', Rule::in(QuestionType::values()), 'distinct'],
