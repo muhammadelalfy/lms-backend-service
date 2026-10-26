@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Auth\Http\Controllers\AuditLogController;
 use Modules\Auth\Http\Controllers\AuthController;
 use Modules\Auth\Http\Controllers\DemoLoginController;
+use Modules\Auth\Http\Controllers\EmailVerificationController;
 use Modules\Auth\Http\Controllers\PasswordResetController;
 use Modules\Auth\Http\Controllers\TeacherRegistrationController;
 use Modules\Auth\Http\Controllers\UserAdminController;
@@ -22,12 +23,16 @@ Route::post('/auth/register-teacher', [TeacherRegistrationController::class, 're
 Route::post('/auth/demo-login', [DemoLoginController::class, 'store'])->middleware('throttle:20,1');
 Route::post('/auth/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:5,1');
 Route::post('/auth/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1');
+// The signed link from the confirmation mail; the signature (48 h) is its proof.
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->name('center.email.verify')->middleware('throttle:30,1');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
     Route::post('/auth/password', [AuthController::class, 'changePassword']);
+    Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->middleware('throttle:email-verification');
 
     // The school admin's accounts and their audit trail.
     Route::get('/users', [UserAdminController::class, 'index']);

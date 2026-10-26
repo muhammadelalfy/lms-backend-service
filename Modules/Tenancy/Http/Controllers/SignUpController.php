@@ -29,6 +29,7 @@ class SignUpController
             'desired_plan' => $school->desired_plan,
             'limits' => $school->limits(),
             'trial_ends_at' => $school->trial_ends_at?->toIso8601String(),
+            'email_verified' => false,
             'url' => $request->getScheme().'://'.$domain.$suffix.'/login',
         ], 201);
     }

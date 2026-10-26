@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Modules\Auth\Models\User;
 use Modules\Auth\Services\AuditTrail;
+use Modules\Tenancy\Services\PlanUsage;
 
 /**
  * The school admin's view of its accounts: approve teachers who registered, add staff, switch accounts
@@ -19,7 +20,7 @@ use Modules\Auth\Services\AuditTrail;
  */
 class UserAdminController extends Controller
 {
-    public function __construct(private readonly AuditTrail $audit) {}
+    public function __construct(private readonly AuditTrail $audit, private readonly PlanUsage $plan) {}
 
     public function index(Request $request)
     {
@@ -62,6 +63,9 @@ class UserAdminController extends Controller
             'password' => ['required', Password::defaults()],
             'role' => ['required', Rule::in(['teacher', 'admin'])],
         ]);
+        if ($data['role'] === 'teacher') {
+            $this->plan->ensureTeacherSeat();
+        }
 
         $user = (new User(['name' => $data['name'], 'email' => $data['email'], 'password' => $data['password']]))
             ->forceFill(['role' => $data['role'], 'status' => User::STATUS_ACTIVE]);
@@ -75,6 +79,10 @@ class UserAdminController extends Controller
     {
         $this->authorizeAdmin($request);
         abort_unless($user->isPending(), 422, 'هذا الحساب ليس بانتظار الموافقة.');
+        // The plan says how many teachers the center may have.
+        if ($user->isAnyRole('teacher')) {
+            $this->plan->ensureTeacherSeat();
+        }
 
         $user->forceFill(['status' => User::STATUS_ACTIVE])->save();
         $this->audit->record($request->user(), 'account.approved', $user);
@@ -111,6 +119,9 @@ class UserAdminController extends Controller
     public function enable(Request $request, User $user)
     {
         $this->authorizeAdmin($request);
+        if ($user->disabled_at !== null && $user->isAnyRole('teacher') && ! $user->isPending()) {
+            $this->plan->ensureTeacherSeat();
+        }
         $user->forceFill(['disabled_at' => null])->save();
         $this->audit->record($request->user(), 'account.enabled', $user);
 
@@ -127,6 +138,9 @@ class UserAdminController extends Controller
         abort_if($user->isPending(), 422, 'وافق على الحساب أولاً.');
         if ($data['role'] !== 'admin') {
             $this->keepOneAdmin($user);
+        }
+        if ($data['role'] === 'teacher' && ! $user->isAnyRole('teacher') && $user->disabled_at === null) {
+            $this->plan->ensureTeacherSeat();
         }
 
         $from = $user->role;

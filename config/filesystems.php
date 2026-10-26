@@ -47,6 +47,18 @@ return [
             'report' => false,
         ],
 
+        // Center logos: the same public storage served at /storage, but never re-rooted per center by
+        // tenancy (which re-roots `public`), so the files stay reachable; each center writes only under
+        // tenants/{id}/branding.
+        'branding' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

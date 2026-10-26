@@ -64,6 +64,22 @@
         <p class="note error" id="list-error" role="alert" hidden></p>
         <div class="table" id="table" role="table" aria-label="المراكز"></div>
         <p class="empty" id="empty" hidden>لا توجد مراكز مطابقة.</p>
+
+        {{-- Plan requests: custom-plan leads from the landing and upgrade requests from centers. --}}
+        <section class="requests" id="requests" aria-labelledby="requests-title">
+            <div class="tools">
+                <h2 id="requests-title">طلبات الباقات</h2>
+                <div class="filters" role="group" aria-label="حالة الطلب" id="req-filters">
+                    <button type="button" class="pill is-on" data-req-filter="new">جديدة <span data-count="new"></span></button>
+                    <button type="button" class="pill" data-req-filter="contacted">تم التواصل <span data-count="contacted"></span></button>
+                    <button type="button" class="pill" data-req-filter="closed">مغلقة <span data-count="closed"></span></button>
+                    <button type="button" class="pill" data-req-filter="">الكل</button>
+                </div>
+            </div>
+            <p class="note error" id="req-error" role="alert" hidden></p>
+            <div class="table" id="req-table" role="table" aria-label="طلبات الباقات"></div>
+            <p class="empty" id="req-empty" hidden>لا توجد طلبات في هذه الحالة.</p>
+        </section>
     </main>
 </div>
 
@@ -114,6 +130,8 @@
             <div class="field"><label for="e-max">حد الطلاب</label><input id="e-max" name="max_students" type="number" min="1" inputmode="numeric" placeholder="حسب الباقة"></div>
             <div class="field"><label for="e-trial">نهاية الفترة التجريبية</label><input id="e-trial" name="trial_ends_at" type="date"></div>
         </div>
+        <label class="check"><input type="checkbox" name="activate"> تفعيل الباقة كاشتراك مدفوع (تنتهي الفترة التجريبية)</label>
+        <p class="hint" id="e-desired" hidden></p>
         <p class="note error" data-error role="alert" hidden></p>
         <footer><button type="button" class="btn ghost" data-close>إلغاء</button><button class="btn primary" type="submit">حفظ</button></footer>
     </form>
