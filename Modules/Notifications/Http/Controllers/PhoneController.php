@@ -7,6 +7,7 @@ use Modules\Notifications\Models\ContactChannel;
 use Modules\Notifications\Models\NotificationDelivery;
 use Modules\Notifications\Models\PhoneVerification;
 use Modules\Notifications\Services\ChannelRegistry;
+use Modules\Tenancy\Exceptions\EmailUnverified;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -20,6 +21,8 @@ class PhoneController extends Controller
 {
     public function send(Request $request, ChannelRegistry $channels)
     {
+        // A center whose owner never confirmed their email sends no SMS after the grace days.
+        EmailUnverified::guard();
         $phone = self::normalize((string) $request->validate(['phone' => 'required|string|max:24'])['phone']);
         if ($phone === null) {
             throw ValidationException::withMessages(['phone' => 'أدخل رقم هاتف صحيحاً، مثل 01012345678.']);

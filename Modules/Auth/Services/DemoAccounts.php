@@ -53,7 +53,8 @@ final class DemoAccounts
     private function make(string $role): User
     {
         $user = new User(['name' => self::NAMES[$role], 'email' => "demo-{$role}@demo.invalid", 'password' => Str::random(48)]);
-        $user->forceFill(['role' => $role, 'is_demo' => true, 'status' => User::STATUS_ACTIVE])->save();
+        // Demo accounts are never asked to confirm an email.
+        $user->forceFill(['role' => $role, 'is_demo' => true, 'status' => User::STATUS_ACTIVE, 'email_verified_at' => now()])->save();
 
         return $user;
     }
