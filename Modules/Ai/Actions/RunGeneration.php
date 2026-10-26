@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Ai\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Modules\Ai\Enums\JobKind;
 use Modules\Ai\Enums\JobStatus;
 use Modules\Ai\Enums\UsageKind;
 use Modules\Ai\Events\GenerationCompleted;
@@ -12,6 +13,7 @@ use Modules\Ai\Exceptions\AiException;
 use Modules\Ai\Models\DraftQuestion;
 use Modules\Ai\Models\GenerationJob;
 use Modules\Ai\Services\AiClient;
+use Modules\Ai\Services\DraftAudit;
 use Modules\Ai\Services\DraftQuestionWriter;
 use Modules\Ai\Services\DraftVerifier;
 use Modules\Ai\Services\GenerationPayload;
@@ -33,6 +35,7 @@ class RunGeneration
         protected readonly GenerationPayload $payload,
         protected readonly DraftQuestionWriter $writer,
         protected readonly DraftVerifier $verifier,
+        protected readonly DraftAudit $audit,
     ) {}
 
     /**
@@ -87,6 +90,9 @@ class RunGeneration
      */
     protected function run(GenerationJob $job): ?bool
     {
+        if ($job->kind === JobKind::Regenerate) {
+            return $this->regenerate($job);
+        }
         $snapshot = $job->blueprint_snapshot;
         $plan = (array) $job->plan;
         $capped = false;
@@ -129,6 +135,60 @@ class RunGeneration
         }
 
         return $capped;
+    }
+
+    /**
+     * One replacement question: the new question takes the old one's place (ordinal), the old one stays
+     * as history (`replaced`). Nothing changes when the question was removed or the draft published
+     * meanwhile (the call is still charged: its units were spent).
+     *
+     * @throws AiException
+     */
+    protected function regenerate(GenerationJob $job): ?bool
+    {
+        $target = DraftQuestion::query()->find($job->target_question_id);
+        if ($job->batches_done === 0) {
+            if ($target === null || ! $target->state->isLive() || $target->draft()->firstOrFail()->isFrozen()) {
+                (new CancelGeneration)->handle($job);
+
+                return null;
+            }
+            if ($job->reserved_units <= 0) {
+                return true;
+            }
+            $this->move($job, JobStatus::Generating);
+            $snapshot = $job->blueprint_snapshot;
+            $response = $this->ai->generate($this->payload->request($snapshot) + [
+                'variation_key' => "r{$job->id}",
+                'limit_units' => max(1, $job->reserved_units),
+                'replace_ref' => $target->ref(),
+                'instruction' => $job->instruction !== null && $job->instruction !== '' ? $job->instruction : null,
+            ]);
+
+            DB::transaction(function () use ($job, $target, $response, $snapshot) {
+                if (! $this->budget->charge($job, UsageKind::Regenerate, "job:{$job->id}:regenerate", $response['units_used'], $response['model'], $response['prompt_version'])) {
+                    return;
+                }
+                $locked = DraftQuestion::query()->whereKey($target->id)->lockForUpdate()->first();
+                $saved = [];
+                if ($locked !== null && $locked->state->isLive() && ! $locked->draft()->firstOrFail()->isFrozen()) {
+                    $saved = $this->writer->insert($job, array_slice($response['questions'], 0, 1), $snapshot['ai_sources']['material_ids'],
+                        $locked->ordinal, $response['prompt_version'], $response['model'], 'regenerated', $locked->id);
+                    if ($saved !== []) {
+                        DraftQuestion::query()->whereKey($locked->id)->update(['state' => 'replaced', 'replaced_by_id' => $saved[0], 'updated_at' => now()]);
+                        $this->audit->record($job->draft_id, $job->requester()->first(), 'regenerated', $locked->id, ['job_id' => $job->id, 'replacement_id' => $saved[0]]);
+                    }
+                }
+                $this->recordBatch($job, 1, count($saved), $response);
+            });
+        }
+
+        if ($this->cancelled($job)) {
+            return null;
+        }
+        $this->move($job, JobStatus::Verifying);
+
+        return ! $this->verifier->verifyJob($job);
     }
 
     /** @param  array{prompt_version: string, model: string, partial: bool, shortfall: list<array>}  $response */

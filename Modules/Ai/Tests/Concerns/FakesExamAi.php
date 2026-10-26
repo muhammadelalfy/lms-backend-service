@@ -7,7 +7,9 @@ namespace Modules\Ai\Tests\Concerns;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Modules\Ai\Models\DraftExam;
 use Modules\Ai\Models\ExamBlueprint;
+use Modules\Ai\Models\GenerationJob;
 use Modules\Ai\Models\Material;
 use Modules\Auth\Models\User;
 
@@ -144,6 +146,17 @@ trait FakesExamAi
         $material->sections()->create(['kind' => 'page', 'label' => 'صفحة 1', 'ordinal' => 1]);
 
         return $this->blueprint($teacher, $attributes + ['source_selection' => [['material_id' => $material->id, 'section_ids' => null]]]);
+    }
+
+    /** Runs a whole generation through the API (sync queue) and returns its draft. */
+    private function generatedDraft(?User $teacher = null, array $blueprintAttributes = []): DraftExam
+    {
+        $this->fakeExamAi($this->aiOverrides);
+        $blueprint = $this->readyBlueprint($teacher, $blueprintAttributes);
+        $id = $this->postJson('/api/ai/generation-jobs', ['blueprint_id' => $blueprint->id], ['Idempotency-Key' => 'draft-'.$blueprint->id.'-key'])
+            ->assertStatus(202)->json('data.id');
+
+        return DraftExam::query()->findOrFail(GenerationJob::query()->findOrFail($id)->draft_id);
     }
 
     private function aiCalls(string $path): int

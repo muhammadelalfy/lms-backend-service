@@ -45,7 +45,7 @@ class DraftQuestionResource extends JsonResource
             ],
             'flagged' => $this->flagged,
             // Unsupported questions never go through "approve all unflagged".
-            'auto_approvable' => ! $this->flagged && $this->verify_verdict !== null && $this->verify_verdict !== 'unsupported',
+            'auto_approvable' => ! $this->flagged && ($this->verify_verdict === 'supported' || ($this->verify_verdict === null && $this->origin === 'manual')),
             'state' => $this->state->value,
             'origin' => $this->origin,
             'edited_by_teacher' => $this->edited_by_teacher,

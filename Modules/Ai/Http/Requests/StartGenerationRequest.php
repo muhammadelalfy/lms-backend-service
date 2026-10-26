@@ -50,11 +50,4 @@ class StartGenerationRequest extends AiRequest
     {
         return $this->blueprint ?? throw new \LogicException('Validated without a blueprint.');
     }
-
-    public function idempotencyKey(): ?string
-    {
-        $key = $this->header('Idempotency-Key');
-
-        return is_string($key) && preg_match('/^[A-Za-z0-9._:-]{8,100}$/', $key) ? $key : null;
-    }
 }

@@ -27,6 +27,14 @@ abstract class AiRequest extends FormRequest
         return 'لا تملك صلاحية هذه المادة.';
     }
 
+    /** The client's Idempotency-Key (the middleware already refused a malformed one), for the actions that persist it. */
+    public function idempotencyKey(): ?string
+    {
+        $key = $this->header('Idempotency-Key');
+
+        return is_string($key) && preg_match('/^[A-Za-z0-9._:-]{8,100}$/', $key) ? $key : null;
+    }
+
     protected function allowed(bool $role): bool
     {
         if (! $role) {

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Ai\Http\Controllers\BlueprintController;
 use Modules\Ai\Http\Controllers\DraftController;
+use Modules\Ai\Http\Controllers\DraftReviewController;
 use Modules\Ai\Http\Controllers\GenerationJobController;
 use Modules\Ai\Http\Controllers\MaterialController;
 
@@ -29,4 +30,14 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
 
     Route::get('drafts', [DraftController::class, 'index']);
     Route::get('drafts/{draft}', [DraftController::class, 'show']);
+    Route::get('drafts/{draft}/events', [DraftReviewController::class, 'events']);
+    Route::post('drafts/{draft}/questions', [DraftReviewController::class, 'store']);
+    Route::put('drafts/{draft}/questions/{question}', [DraftReviewController::class, 'update']);
+    Route::delete('drafts/{draft}/questions/{question}', [DraftReviewController::class, 'destroy']);
+    Route::post('drafts/{draft}/questions/{question}/approve', [DraftReviewController::class, 'approve']);
+    Route::post('drafts/{draft}/questions/{question}/unapprove', [DraftReviewController::class, 'unapprove']);
+    Route::post('drafts/{draft}/questions/{question}/regenerate', [DraftReviewController::class, 'regenerate']);
+    Route::post('drafts/{draft}/approve-all-unflagged', [DraftReviewController::class, 'approveUnflagged']);
+    Route::post('drafts/{draft}/reorder', [DraftReviewController::class, 'reorder']);
+    Route::post('drafts/{draft}/publish', [DraftReviewController::class, 'publish']);
 });
