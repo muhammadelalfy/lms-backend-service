@@ -130,6 +130,8 @@
             <div class="field"><label for="e-max">حد الطلاب</label><input id="e-max" name="max_students" type="number" min="1" inputmode="numeric" placeholder="حسب الباقة"></div>
             <div class="field"><label for="e-trial">نهاية الفترة التجريبية</label><input id="e-trial" name="trial_ends_at" type="date"></div>
         </div>
+        <label class="check"><input type="checkbox" name="activate"> تفعيل الباقة كاشتراك مدفوع (تنتهي الفترة التجريبية)</label>
+        <p class="hint" id="e-desired" hidden></p>
         <p class="note error" data-error role="alert" hidden></p>
         <footer><button type="button" class="btn ghost" data-close>إلغاء</button><button class="btn primary" type="submit">حفظ</button></footer>
     </form>

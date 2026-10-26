@@ -77,6 +77,9 @@ final class SchoolsServiceProvider extends ServiceProvider
 
         // Custom-plan leads from the landing: 5 per visitor per hour.
         RateLimiter::for('plan-requests', fn (Request $request) => Limit::perHour(5)->by('plan-requests:'.$request->ip())->response($tooMany));
+        // Upgrade requests of a center's admin: 3 per admin per hour.
+        RateLimiter::for('plan-upgrades', fn (Request $request) => Limit::perHour(3)
+            ->by('plan-upgrades:'.tenant('id').':'.$request->user()?->getAuthIdentifier())->response($tooMany));
     }
 
     private function mapRoutes(): void

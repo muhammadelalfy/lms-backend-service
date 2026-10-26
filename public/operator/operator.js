@@ -175,7 +175,8 @@
 
         return el('div', { class: 'row', role: 'row' },
             el('div', { class: 'cell-school' }, el('b', { text: s.name }), el('small', { text: s.id })),
-            el('div', { 'data-label': 'الباقة' }, el('span', { class: 'badge plan', text: planLabel(s.plan) })),
+            el('div', { 'data-label': 'الباقة' }, el('span', { class: 'badge plan', text: planLabel(s.plan) }),
+                s.trial_ends_at && s.desired_plan && s.desired_plan !== s.plan ? el('small', { class: 'desired', text: 'يريد ' + planLabel(s.desired_plan) }) : null),
             el('div', { 'data-label': 'الحالة' }, el('span', { class: 'badge ' + st, text: STATE_LABEL[st] })),
             usage,
             el('div', { class: 'domains-cell', 'data-label': 'العناوين' }, domains),
@@ -283,16 +284,32 @@
         fillPlans($('#e-plan'), school.plan);
         field(editForm, 'max_students').value = school.max_students === null ? '' : school.max_students;
         field(editForm, 'trial_ends_at').value = school.trial_ends_at ? school.trial_ends_at.slice(0, 10) : '';
+        field(editForm, 'activate').checked = false;
+        var desired = $('#e-desired');
+        desired.hidden = !school.desired_plan;
+        desired.textContent = school.desired_plan
+            ? 'طلب عند التسجيل: ' + planLabel(school.desired_plan) + (school.preferred_billing === 'yearly' ? ' (سنوي)' : ' (شهري)')
+            : '';
         openDialog(editDlg);
     }
     editForm.addEventListener('submit', function (e) {
         e.preventDefault();
         var button = $('[type=submit]', editForm), trial = field(editForm, 'trial_ends_at').value;
+        var activate = field(editForm, 'activate').checked;
         busy(button, true);
         api('/schools/' + encodeURIComponent(editing.id), { method: 'PATCH', body: {
             name: field(editForm, 'name').value.trim(), plan: field(editForm, 'plan').value,
-            max_students: intOrNull(field(editForm, 'max_students').value), trial_ends_at: trial || null
-        } }).then(function () { busy(button, false); closeDialog(editDlg); toast('تم حفظ التعديلات.'); return load(); })
+            max_students: intOrNull(field(editForm, 'max_students').value), trial_ends_at: activate ? null : (trial || null),
+            activate: activate
+        } }).then(function (school) {
+            busy(button, false); closeDialog(editDlg); toast('تم حفظ التعديلات.');
+            // A plan smaller than what the center uses is saved; say what is over (nothing is removed).
+            var CAP = { students: 'الطلاب', teachers: 'المدرسين', subjects: 'المواد', classes_per_subject: 'الفصول لكل مادة', assistants: 'المساعدين', storage_gb: 'التخزين' };
+            ((school && school.warnings) || []).forEach(function (w) {
+                toast('تنبيه: ' + (CAP[w.cap] || w.cap) + ' ' + w.used + ' والحد الجديد ' + w.limit + '. لن يُحذف شيء، والإضافة موقوفة حتى يقل العدد.', true);
+            });
+            return load();
+        })
             .catch(function (err) { busy(button, false); fail(editDlg, err); });
     });
 

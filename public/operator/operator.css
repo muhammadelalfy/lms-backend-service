@@ -156,3 +156,4 @@ input[type="checkbox"] { width: 20px; min-height: 20px; height: 20px; accent-col
 .req-row .msg { white-space: pre-line; overflow-wrap: anywhere; }
 .req-row select { min-height: 40px; }
 @media (max-width: 900px) { .req-row { grid-template-columns: 1fr; } .req-row.head { display: none; } }
+small.desired { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
