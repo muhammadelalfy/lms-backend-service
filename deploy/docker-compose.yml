@@ -60,7 +60,7 @@ services:
 
   worker:
     <<: *app
-    command: ["php", "artisan", "queue:work", "redis", "--queue=critical,chat,default,whatsapp,sms,low",
+    command: ["php", "artisan", "queue:work", "redis", "--queue=critical,chat,default,ai,whatsapp,sms,low",
               "--sleep=1", "--tries=3", "--timeout=60", "--max-time=3600"]
     stop_grace_period: 70s
     deploy: { resources: { limits: { memory: 256m } } }

@@ -1,0 +1,14 @@
+{
+  "name": "Ai",
+  "alias": "ai",
+  "description": "AI exams: private teaching materials, extraction and ingestion through the AI service, plan flag and caps.",
+  "keywords": [
+    "ai"
+  ],
+  "priority": 10,
+  "providers": [
+    "Modules\\Ai\\Providers\\AiServiceProvider"
+  ],
+  "files": [],
+  "version": "1.0.0"
+}

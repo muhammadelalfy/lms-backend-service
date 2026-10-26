@@ -21,15 +21,26 @@ $small = [
     'assistants_role' => 'soon', 'sms_whatsapp_messages' => false, 'qr_face_attendance' => false,
     'installments' => false, 'revenue_reports_per_teacher' => false, 'custom_domain' => false,
     'priority_support' => false, 'dedicated_manager' => false,
+    'ai_exams' => false,
 ];
-$mid = ['sms_whatsapp_messages' => true, 'qr_face_attendance' => true, 'installments' => 'soon', 'revenue_reports_per_teacher' => 'soon'] + $small;
+$mid = ['ai_exams' => 'soon', 'sms_whatsapp_messages' => true, 'qr_face_attendance' => true, 'installments' => 'soon', 'revenue_reports_per_teacher' => 'soon'] + $small;
 $big = ['custom_domain' => 'soon'] + $mid;
 $top = ['priority_support' => true] + $big;
 $flagship = ['dedicated_manager' => true] + $top;
 
+// AI exams caps per plan: [units per month, material storage in MB, materials count]. The feature is
+// off (0) below t3. `ai_exams` stays 'soon' until the generation sprints ship; flipping it to true
+// is a config change only (a school can also be switched on alone, see School::feature()).
+$ai = [
+    0 => [0, 0, 0],
+    3 => [300, 500, 50], 4 => [600, 1024, 100], 5 => [1500, 3072, 250],
+    6 => [3000, 5120, 500], 7 => [6000, 10240, 1000], 8 => [6000, 10240, 1000],
+];
+
 $tier = fn (int $n, string $label, array $limits, int $list, array $flags) => [
     'public' => true, 'tier' => $n, 'label' => $label, 'list_monthly' => $list,
-    'limits' => array_combine(['students', 'teachers', 'subjects', 'classes_per_subject', 'assistants', 'storage_gb'], $limits),
+    'limits' => array_combine(['students', 'teachers', 'subjects', 'classes_per_subject', 'assistants', 'storage_gb'], $limits)
+        + array_combine(['ai_units_monthly', 'ai_material_storage_mb', 'ai_materials_max'], $ai[$n] ?? $ai[0]),
     'features' => $everyPlan + $flags,
 ];
 
@@ -92,6 +103,7 @@ return [
             ]],
             ['group' => 'الاختبارات والمتابعة', 'rows' => [
                 ['key' => 'exams', 'label' => 'اختبارات وتصحيح', 'type' => 'feature'],
+                ['key' => 'ai_exams', 'label' => 'امتحانات بالذكاء الاصطناعي من موادك', 'type' => 'feature'],
                 ['key' => 'attendance_reports', 'label' => 'تقارير الحضور', 'type' => 'feature'],
                 ['key' => 'grade_reports', 'label' => 'تقارير الدرجات والتقدم', 'type' => 'feature'],
             ]],
