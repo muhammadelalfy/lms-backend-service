@@ -6,6 +6,7 @@ use Modules\Ai\Http\Controllers\DraftController;
 use Modules\Ai\Http\Controllers\DraftReviewController;
 use Modules\Ai\Http\Controllers\GenerationJobController;
 use Modules\Ai\Http\Controllers\MaterialController;
+use Modules\Ai\Http\Controllers\UsageController;
 
 Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::get('materials', [MaterialController::class, 'index']);
@@ -27,6 +28,8 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::get('generation-jobs/{job}', [GenerationJobController::class, 'show']);
     Route::post('generation-jobs/{job}/cancel', [GenerationJobController::class, 'cancel']);
     Route::post('generation-jobs/{job}/retry', [GenerationJobController::class, 'retry']);
+
+    Route::get('usage', [UsageController::class, 'show']);
 
     Route::get('drafts', [DraftController::class, 'index']);
     Route::get('drafts/{draft}', [DraftController::class, 'show']);

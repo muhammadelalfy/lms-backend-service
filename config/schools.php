@@ -37,11 +37,19 @@ $ai = [
     6 => [3000, 5120, 500], 7 => [6000, 10240, 1000], 8 => [6000, 10240, 1000],
 ];
 
+// The flip of `ai_exams` from 'soon' to true, per tier (AI_EXAMS_LIVE_TIERS=t3,t4). Set it only after the
+// AI service's budgets are shared across replicas (S63) and the evaluation gate (S73) passed. A tier
+// whose flag is false (t1, t2) never turns on this way.
+$aiLive = array_values(array_filter(array_map('trim', explode(',', (string) env('AI_EXAMS_LIVE_TIERS', '')))));
+$aiFlag = fn (int $n, array $flags) => ($flags['ai_exams'] ?? false) === 'soon' && in_array("t{$n}", $aiLive, true)
+    ? ['ai_exams' => true] + $flags
+    : $flags;
+
 $tier = fn (int $n, string $label, array $limits, int $list, array $flags) => [
     'public' => true, 'tier' => $n, 'label' => $label, 'list_monthly' => $list,
     'limits' => array_combine(['students', 'teachers', 'subjects', 'classes_per_subject', 'assistants', 'storage_gb'], $limits)
         + array_combine(['ai_units_monthly', 'ai_material_storage_mb', 'ai_materials_max'], $ai[$n] ?? $ai[0]),
-    'features' => $everyPlan + $flags,
+    'features' => $everyPlan + $aiFlag($n, $flags),
 ];
 
 return [
