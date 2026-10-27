@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Exams\Http\Controllers\ExamManagementController;
 use Modules\Exams\Http\Controllers\ExamResultController;
+use Modules\Exams\Http\Controllers\GoogleFormController;
 use Modules\Exams\Http\Controllers\QuestionBankController;
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -20,6 +21,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/exam-templates/{template}', [ExamManagementController::class, 'updateTemplate']);
     Route::delete('/exam-templates/{template}', [ExamManagementController::class, 'destroyTemplate']);
     Route::get('/exam-templates/{template}/pdf', [ExamManagementController::class, 'downloadPdf']);
+    Route::get('/exam-templates/{template}/google-form', [GoogleFormController::class, 'show']);
+    Route::post('/exam-templates/{template}/google-form', [GoogleFormController::class, 'store']);
+    Route::post('/exam-templates/{template}/google-form/sync', [GoogleFormController::class, 'sync']);
+    Route::get('/exam-templates/{template}/google-form/responses', [GoogleFormController::class, 'responses']);
     Route::post('/exam-templates/{template}/start', [ExamManagementController::class, 'startSession']);
     Route::post('/exam-sessions/{session}/events', [ExamManagementController::class, 'event']);
     Route::post('/exam-sessions/{session}/answers', [ExamManagementController::class, 'answer']);
