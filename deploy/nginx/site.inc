@@ -25,7 +25,7 @@ client_max_body_size 25m;
         expires 7d;
     }
 
-    location ~ ^/(api|broadcasting|storage|up)(/|$) {
+    location ~ ^/(api|broadcasting|storage|download|up)(/|$) {
         proxy_pass http://api;
         include /etc/nginx/templates/proxy-headers.inc;
         proxy_read_timeout 60s;
