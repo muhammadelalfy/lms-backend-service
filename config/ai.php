@@ -13,7 +13,17 @@ return [
     'disk' => env('AI_MATERIALS_DISK', 'local'),
 
     'materials' => [
-        'max_file_mb' => (int) env('AI_MAX_FILE_MB', 25),
+        // Per-file cap for a PDF: it is turned into light JSON by the pdf-extractor and the original is
+        // removed. Word/Excel are parsed in the AI service's RAM, so they keep their own, lower cap.
+        'max_file_mb' => (int) env('AI_MAX_FILE_MB', 100),
+        'max_office_file_mb' => (int) env('AI_MAX_OFFICE_FILE_MB', 25),
+        // false (default): a PDF is deleted as soon as its text is stored. true keeps it (and its size counts).
+        'keep_originals' => (bool) env('AI_KEEP_ORIGINALS', false),
+        // Chunked upload: the browser slices a file into pieces of this size (nginx must allow one piece).
+        'chunk_mb' => (int) env('AI_UPLOAD_CHUNK_MB', 5),
+        'upload_ttl_hours' => (int) env('AI_UPLOAD_TTL_HOURS', 24),
+        // Before extraction the light size is unknown: the plan's storage check uses this share of a PDF.
+        'light_estimate_ratio' => (float) env('AI_LIGHT_ESTIMATE_RATIO', 0.1),
         'max_pdf_pages' => (int) env('AI_MAX_PDF_PAGES', 300),
         'max_xlsx_sheets' => (int) env('AI_MAX_XLSX_SHEETS', 20),
         'max_xlsx_cells' => (int) env('AI_MAX_XLSX_CELLS', 50000),

@@ -135,7 +135,8 @@ network only (no published ports); Laravel reaches it at `http://lms-ai:8001`.
 | Piece | What |
 |---|---|
 | `lms-ai`, `ai-db` | The service and its pgvector database (`ai-db` volume). Image: `ghcr.io/<owner>/lms-ai-service`, published by that repo's CI on every push to `main`. |
-| `ai-worker` | A Laravel queue worker for the slow `ai` queue (`--timeout=170`; `REDIS_QUEUE_RETRY_AFTER` is 200). |
+| `pdf-extractor` | Node + pdf2json: turns an uploaded PDF into light JSON for the AI service. Internal only, `mem_limit: 768m`, temp files on the `extract-tmp` volume, token `PDF_EXTRACTOR_TOKEN` (written by `make-ai-env.sh`). Image `ghcr.io/muhammadelalfy/lms-pdf-extractor` (built by the lms-ai-service CI). See `docs/ai-pdf-light-json.md`. |
+| `ai-worker` | A Laravel queue worker for the slow `ai` queue (`--timeout=340`; `REDIS_QUEUE_RETRY_AFTER` is 360, above the 330 s job timeout). |
 | `make-ai-env.sh` | Creates `.env.ai` (service token, DB password, Redis for shared budgets) and adds `AI_SERVICE_URL`, `AI_SERVICE_TOKEN`, `REDIS_QUEUE_RETRY_AFTER` to `.env.production`, only when missing. |
 | `deploy-ai.sh <image>` | Pulls, starts, health-checks (`/ready`) and puts the previous image back on failure. Never touches the API, web or load balancer. |
 

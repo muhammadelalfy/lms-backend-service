@@ -50,7 +50,8 @@ final class ExtractMaterial
         $material = Material::query()->findOrFail($materialId);
 
         try {
-            $this->run($material);
+            $lightBytes = $this->run($material);
+            $this->removeOriginal($material, $lightBytes);
         } catch (AiException $e) {
             if ($e->transient && ! $final) {
                 $material->moveTo(MaterialStatus::Uploaded);
@@ -59,10 +60,34 @@ final class ExtractMaterial
             $e->reason === FailureReason::SCANNED_NO_TEXT
                 ? $material->moveTo(MaterialStatus::NeedsOcr, FailureReason::SCANNED_NO_TEXT)
                 : $material->moveTo(MaterialStatus::Failed, $e->reason);
+            // A file the service cannot read is useless: only an unavailable service leaves it for a retry.
+            if ($e->reason !== FailureReason::AI_UNAVAILABLE) {
+                $this->removeOriginal($material, 0);
+            }
         }
     }
 
-    private function run(Material $material): void
+    /**
+     * A PDF's text now lives (as chunks) in the AI service, so the big original is deleted and the plan
+     * counts only the light size from here on. Kept when AI_KEEP_ORIGINALS=true; Word/Excel are always kept.
+     */
+    private function removeOriginal(Material $material, int $lightBytes): void
+    {
+        if ($material->kind !== MaterialKind::Pdf || config('ai.materials.keep_originals') || $material->storage_path === null) {
+            return;
+        }
+        try {
+            Storage::disk((string) config('ai.disk'))->delete($material->storage_path);
+        } catch (\Throwable $e) {
+            logger()->warning('Could not remove the original of an AI material', ['material' => $material->id, 'error' => $e::class]);
+
+            return; // still counted at its full size; nothing is lost by trying again later
+        }
+        $material->forceFill(['storage_path' => null, 'original_removed' => true, 'size_bytes' => $lightBytes])->save();
+    }
+
+    /** @return int the size of the light text that was ingested (what the plan counts) */
+    private function run(Material $material): int
     {
         $diskName = (string) config('ai.disk');
         $disk = Storage::disk($diskName);
@@ -89,6 +114,7 @@ final class ExtractMaterial
             $payload[] = ['id' => $sectionIds[$i], 'kind' => $section->kind, 'label' => $section->label, 'text' => $section->text];
         }
         $embedModel = (string) config('ai.materials.embed_model');
+        $lightBytes = strlen((string) json_encode($payload, JSON_UNESCAPED_UNICODE));
         $result = $this->ai->ingest($material->id, $material->ingest_version, $embedModel, $payload);
 
         DB::transaction(function () use ($material, $result, $sectionIds, $embedModel) {
@@ -109,6 +135,8 @@ final class ExtractMaterial
         });
 
         event(new MaterialReady($material->id, $material->owner_user_id));
+
+        return $lightBytes;
     }
 
     private function checkLimits(Material $material, ExtractedMaterial $extracted): void

@@ -209,7 +209,7 @@ class MaterialUploadTest extends TestCase
 
         $first = $this->getJson('/api/ai/materials')->assertOk()->assertJsonCount(25, 'data')
             ->assertJsonPath('limits.materials_count', 27)->assertJsonPath('limits.materials_max', 100)
-            ->assertJsonPath('limits.max_file_mb', 25)->assertJsonPath('limits.allowed_types', ['pdf', 'docx', 'xlsx']);
+            ->assertJsonPath('limits.max_file_mb', 100)->assertJsonPath('limits.allowed_types', ['pdf', 'docx', 'xlsx']);
         $next = $first->json('meta.next_cursor');
         $this->assertNotNull($next);
         $this->getJson('/api/ai/materials?cursor='.$next)->assertOk()->assertJsonCount(2, 'data');

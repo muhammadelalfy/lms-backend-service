@@ -146,7 +146,7 @@ class MaterialJobsTest extends TestCase
 
         $this->assertSame(MaterialStatus::NeedsOcr, $material->refresh()->status);
         $this->assertSame('scanned_no_text', $material->failure_reason);
-        $this->getJson("/api/ai/materials/{$material->id}")->assertJsonPath('data.failure_message', 'الملف عبارة عن صور؛ ارفع نسخة نصية أو Word.');
+        $this->getJson("/api/ai/materials/{$material->id}")->assertJsonPath('data.failure_message', 'الملف ممسوح ضوئياً ويحتاج OCR؛ ارفع نسخة نصية أو Word.');
     }
 
     public function test_service_refusals_become_specific_arabic_reasons(): void
@@ -241,9 +241,27 @@ class MaterialJobsTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_a_pdf_original_is_removed_once_ready_and_the_light_size_is_what_counts(): void
+    {
+        $this->fakeAiService();
+        $material = $this->waiting(['size_bytes' => 50000]);
+        $path = $material->storage_path;
+
+        $this->runJob($material);
+
+        $material->refresh();
+        $this->assertSame(MaterialStatus::Ready, $material->status);
+        $this->assertTrue($material->original_removed);
+        $this->assertNull($material->storage_path);
+        Storage::disk($this->aiDisk)->assertMissing($path);
+        $this->assertGreaterThan(0, $material->size_bytes);
+        $this->assertLessThan(1000, $material->size_bytes);
+    }
+
     public function test_deleting_removes_the_file_rows_and_asks_the_ai_service_to_delete_vectors(): void
     {
         $this->fakeAiService();
+        config(['ai.materials.keep_originals' => true]); // this test is about deleting a kept file
         $material = $this->waiting();
         $this->runJob($material);
         $path = $material->storage_path;

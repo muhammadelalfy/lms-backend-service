@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Modules\Ai\Actions\PurgeStaleUploads;
 use Modules\Attendance\Services\AbsenceSweeper;
 use Modules\Calls\Services\CallService;
 use Modules\Courses\Actions\ExpireEnrollments;
@@ -33,10 +34,15 @@ Artisan::command('courses:expire-enrollments', function (ExpireEnrollments $expi
     $this->info('Enrollments expired: '.$expire->handle());
 })->purpose('End the access of course enrollments past their period');
 
+Artisan::command('ai:purge-stale-uploads', function (PurgeStaleUploads $purge) {
+    $this->info('Abandoned AI uploads removed: '.$purge->handle());
+})->purpose('Delete chunked AI material uploads that were never completed, with their temp files');
+
 // Needs the standard cron entry: * * * * * php artisan schedule:run
 // Each task is queued once per active school and runs inside that school's database.
 Schedule::command('schools:dispatch attendance:sweep-absences')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('schools:dispatch duties:send-reminders')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('schools:dispatch sessions:send-reminders')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('schools:dispatch calls:expire')->everyMinute()->withoutOverlapping();
+Schedule::command('schools:dispatch ai:purge-stale-uploads')->hourly()->withoutOverlapping();
 Schedule::command('schools:dispatch courses:expire-enrollments')->hourly()->withoutOverlapping();

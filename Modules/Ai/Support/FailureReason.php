@@ -31,7 +31,7 @@ final class FailureReason
 
     private const MESSAGES = [
         self::AI_UNAVAILABLE => 'المساعد غير متاح الآن. أعد المحاولة بعد قليل.',
-        self::SCANNED_NO_TEXT => 'الملف عبارة عن صور؛ ارفع نسخة نصية أو Word.',
+        self::SCANNED_NO_TEXT => 'الملف ممسوح ضوئياً ويحتاج OCR؛ ارفع نسخة نصية أو Word.',
         self::FILE_TOO_LARGE => 'الملف كبير جداً.',
         self::PASSWORD_PROTECTED => 'الملف محمي بكلمة مرور.',
         self::CORRUPT => 'الملف تالف أو لا يمكن قراءته.',

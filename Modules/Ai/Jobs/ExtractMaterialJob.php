@@ -22,7 +22,8 @@ class ExtractMaterialJob implements ShouldQueue
 
     public int $tries = 3;
 
-    public int $timeout = 150;
+    // A big PDF is streamed to the AI service and the pdf-extractor: allow minutes, not seconds.
+    public int $timeout = 330;
 
     public function __construct(public readonly int $materialId)
     {

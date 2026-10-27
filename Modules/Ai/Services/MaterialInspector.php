@@ -20,8 +20,13 @@ final class MaterialInspector
 
     public function inspect(UploadedFile $file): InspectedFile
     {
-        $path = (string) $file->getRealPath();
-        $extension = strtolower($file->getClientOriginalExtension());
+        return $this->inspectPath((string) $file->getRealPath(), $file->getClientOriginalName());
+    }
+
+    /** Same checks for a file already on disk (a finished chunked upload), judged by content and name. */
+    public function inspectPath(string $path, string $clientName): InspectedFile
+    {
+        $extension = strtolower(pathinfo($clientName, PATHINFO_EXTENSION));
         $this->refuseByExtension($extension);
 
         if (filesize($path) === 0) {
@@ -39,8 +44,27 @@ final class MaterialInspector
         if ($extension !== $kind->value) {
             throw new InvalidMaterialFile('امتداد الملف لا يطابق محتواه.');
         }
+        $this->ensureSizeFits($kind, (int) filesize($path));
 
         return new InspectedFile($kind, $kind->mime(), hash_file('sha256', $path));
+    }
+
+    /** A PDF may be big (it is read by the extractor, not held in RAM); Word/Excel are parsed in memory. */
+    public function ensureSizeFits(MaterialKind $kind, int $bytes): void
+    {
+        $mb = $kind === MaterialKind::Pdf ? (int) config('ai.materials.max_file_mb') : (int) config('ai.materials.max_office_file_mb');
+        if ($bytes > $mb * 1048576) {
+            throw new InvalidMaterialFile("حجم الملف أكبر من الحد المسموح ({$mb} ميجابايت).");
+        }
+    }
+
+    /** The kind a file name claims, before its content is known (the chunked upload's first call). */
+    public function kindFromName(string $name): MaterialKind
+    {
+        $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        $this->refuseByExtension($extension);
+
+        return MaterialKind::from($extension);
     }
 
     private function refuseByExtension(string $extension): void

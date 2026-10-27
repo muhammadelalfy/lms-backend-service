@@ -21,6 +21,19 @@ final class AiEntitlements
         }
     }
 
+    /**
+     * What a file will occupy once processed: a PDF's original is removed after extraction, so only
+     * its light text is kept (estimated here; the real size replaces it when extraction ends).
+     */
+    public function expectedStoredBytes(string $kind, int $bytes): int
+    {
+        if ($kind !== 'pdf' || config('ai.materials.keep_originals')) {
+            return $bytes;
+        }
+
+        return (int) ceil($bytes * (float) config('ai.materials.light_estimate_ratio'));
+    }
+
     public function ensureCanStore(int $bytes): void
     {
         $school = $this->school();
@@ -53,6 +66,9 @@ final class AiEntitlements
         return [
             'allowed_types' => ['pdf', 'docx', 'xlsx'],
             'max_file_mb' => (int) config('ai.materials.max_file_mb'),
+            'max_office_file_mb' => (int) config('ai.materials.max_office_file_mb'),
+            'chunk_mb' => (int) config('ai.materials.chunk_mb'),
+            'keep_originals' => (bool) config('ai.materials.keep_originals'),
             'materials_count' => $usage['materials'],
             'materials_max' => $school->limit('ai_materials_max'),
             'storage_used_mb' => round($usage['storage_bytes'] / 1048576, 2),

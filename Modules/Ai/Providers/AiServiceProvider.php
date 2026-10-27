@@ -2,8 +2,11 @@
 
 namespace Modules\Ai\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Modules\Ai\Actions\PrepareSessionGrading;
@@ -28,6 +31,8 @@ final class AiServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Route::middleware(['api', 'school'])->prefix('api')->group(__DIR__.'/../routes/api.php');
+        RateLimiter::for('ai-upload-start', fn (Request $r) => Limit::perMinute(30)->by('ai-up:'.($r->user()?->id ?? $r->ip())));
+        RateLimiter::for('ai-upload-chunks', fn (Request $r) => Limit::perMinute(300)->by('ai-chunk:'.($r->user()?->id ?? $r->ip())));
         Gate::policy(Material::class, MaterialPolicy::class);
         Gate::policy(ExamBlueprint::class, BlueprintPolicy::class);
         Gate::policy(DraftExam::class, DraftPolicy::class);

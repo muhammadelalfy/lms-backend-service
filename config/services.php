@@ -97,7 +97,7 @@ return [
         'url' => env('AI_SERVICE_URL'),
         'token' => env('AI_SERVICE_TOKEN'),
         'timeout' => (int) env('AI_SERVICE_TIMEOUT', 30),
-        'extract_timeout' => (int) env('AI_SERVICE_EXTRACT_TIMEOUT', 180),
+        'extract_timeout' => (int) env('AI_SERVICE_EXTRACT_TIMEOUT', 300),
     ],
 
     // Built-in voice and video: a self-hosted LiveKit server (open source, no
