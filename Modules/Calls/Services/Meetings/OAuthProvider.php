@@ -35,7 +35,7 @@ class OAuthProvider
         return match ($provider) {
             'google' => 'https://accounts.google.com/o/oauth2/v2/auth?'.http_build_query([
                 'client_id' => config('services.google.client_id'), 'redirect_uri' => $redirect, 'response_type' => 'code',
-                'scope' => 'https://www.googleapis.com/auth/calendar.events', 'access_type' => 'offline', 'prompt' => 'consent', 'state' => $state,
+                'scope' => 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/forms.body https://www.googleapis.com/auth/forms.responses.readonly', 'include_granted_scopes' => 'true', 'access_type' => 'offline', 'prompt' => 'consent', 'state' => $state,
             ]),
             'zoom' => 'https://zoom.us/oauth/authorize?'.http_build_query([
                 'response_type' => 'code', 'client_id' => config('services.zoom.client_id'), 'redirect_uri' => $redirect, 'state' => $state,
