@@ -94,7 +94,7 @@ class ArabicDemoSeeder extends Seeder
 
             ExamResult::updateOrCreate(
                 ['student_id' => $student->id, 'title' => 'اختبار منتصف الفصل'],
-                ['score' => 12 + ($index % 9), 'max_score' => 20, 'taken_at' => now()->subDays(10), 'recorded_by' => $teacher->id],
+                ['score' => 12 + ($index % 9), 'max_score' => 20, 'taken_at' => now()->subDays(10), 'recorded_by' => $teacher->id, 'status' => 'published', 'published_at' => now()->subDays(9), 'published_by' => $teacher->id],
             );
 
             Payment::updateOrCreate(

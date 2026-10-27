@@ -182,6 +182,43 @@ class AiClient
     }
 
     /**
+     * Suggests a grade for one written answer. The payload holds only the question, model answer,
+     * rubric, the answer text and an opaque `answer_ref` (no student identity; the service refuses any
+     * other field). Costs units, so it is never retried here: the queued job retries it.
+     *
+     * @param  array{question: array, answer_ref: string, answer_text: string, language: string}  $payload
+     * @return array{prompt_version: string, model: string, answer_ref: string, suggested_score: float, criteria: list<array{id: string, score: float, reason: string}>, feedback: string, reasoning: string, confidence: float, injection_suspected: bool, units_used: int}
+     *
+     * @throws AiException
+     */
+    public function suggestGrade(array $payload): array
+    {
+        $body = $this->examCall('/v1/grading/suggest', $payload, (float) config('ai.grading.timeout'));
+        if (! is_numeric($body['suggested_score'] ?? null) || ! is_numeric($body['confidence'] ?? null)) {
+            throw $this->badAnswer();
+        }
+        $criteria = [];
+        foreach ((array) ($body['criteria'] ?? []) as $c) {
+            if (is_array($c) && isset($c['id']) && is_numeric($c['score'] ?? null)) {
+                $criteria[] = ['id' => mb_substr((string) $c['id'], 0, 20), 'score' => (float) $c['score'], 'reason' => mb_substr((string) ($c['reason'] ?? ''), 0, 1000)];
+            }
+        }
+
+        return [
+            'prompt_version' => (string) ($body['prompt_version'] ?? ''),
+            'model' => (string) ($body['model'] ?? ''),
+            'answer_ref' => (string) ($body['answer_ref'] ?? ''),
+            'suggested_score' => (float) $body['suggested_score'],
+            'criteria' => array_slice($criteria, 0, 10),
+            'feedback' => mb_substr((string) ($body['feedback'] ?? ''), 0, 3000),
+            'reasoning' => mb_substr((string) ($body['reasoning'] ?? ''), 0, 3000),
+            'confidence' => (float) $body['confidence'],
+            'injection_suspected' => (bool) ($body['injection_suspected'] ?? false),
+            'units_used' => max(0, (int) ($body['units_used'] ?? 0)),
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      *
      * @throws AiException

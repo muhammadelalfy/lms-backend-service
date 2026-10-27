@@ -69,8 +69,8 @@ class LmsApiTest extends TestCase
         $this->putJson("/api/attendance/{$attendance}", ['status' => 'late'])->assertOk()->assertJsonPath('status', 'late');
 
         $exam = $this->postJson('/api/exams', [
-            'student_id' => $student->id, 'title' => 'اختبار الجبر', 'score' => 18, 'max_score' => 20, 'taken_at' => '2026-08-15',
-        ])->assertCreated()->json('id');
+            'student_id' => $student->id, 'title' => 'اختبار الجبر', 'score' => 18, 'max_score' => 20, 'taken_at' => '2026-08-15', 'status' => 'draft',
+        ])->assertCreated()->assertJsonPath('status', 'draft')->json('id');
         $this->putJson("/api/exams/{$exam}", ['score' => 19])->assertOk()->assertJsonPath('score', 19);
         $this->deleteJson("/api/attendance/{$attendance}")->assertNoContent();
         $this->deleteJson("/api/exams/{$exam}")->assertNoContent();

@@ -18,7 +18,7 @@ class ExamSession extends Model
         return \Database\Factories\ExamSessionFactory::new();
     }
 
-    protected $fillable = ['template_id', 'student_id', 'started_at', 'submitted_at', 'status', 'camera_required', 'fullscreen_required', 'focus_loss_count', 'last_event_at'];
+    protected $fillable = ['template_id', 'student_id', 'started_at', 'submitted_at', 'status', 'camera_required', 'fullscreen_required', 'focus_loss_count', 'last_event_at', 'grading_state'];
     protected $casts = ['started_at' => 'datetime', 'submitted_at' => 'datetime', 'last_event_at' => 'datetime', 'camera_required' => 'boolean', 'fullscreen_required' => 'boolean', 'focus_loss_count' => 'integer'];
 
     public function template(): BelongsTo { return $this->belongsTo(ExamTemplate::class, 'template_id'); }

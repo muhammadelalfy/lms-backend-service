@@ -17,6 +17,7 @@ return [
         'duty' => ['label' => 'الواجبات', 'critical' => false],
         'message' => ['label' => 'رسائل المركز', 'critical' => false],
         'exam_result' => ['label' => 'نتائج الاختبارات', 'critical' => false],
+        'exam_result_corrected' => ['label' => 'تصحيح نتائج الاختبارات', 'critical' => false],
         'worksheet' => ['label' => 'أوراق العمل', 'critical' => false],
         'chat' => ['label' => 'المحادثات', 'critical' => false],
         'call' => ['label' => 'المكالمات', 'critical' => false],

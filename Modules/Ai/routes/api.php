@@ -5,7 +5,10 @@ use Modules\Ai\Http\Controllers\BlueprintController;
 use Modules\Ai\Http\Controllers\DraftController;
 use Modules\Ai\Http\Controllers\DraftReviewController;
 use Modules\Ai\Http\Controllers\GenerationJobController;
+use Modules\Ai\Http\Controllers\GradingController;
 use Modules\Ai\Http\Controllers\MaterialController;
+use Modules\Ai\Http\Controllers\QuestionRubricController;
+use Modules\Ai\Http\Controllers\SessionResultController;
 use Modules\Ai\Http\Controllers\UsageController;
 
 Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
@@ -43,4 +46,14 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::post('drafts/{draft}/approve-all-unflagged', [DraftReviewController::class, 'approveUnflagged']);
     Route::post('drafts/{draft}/reorder', [DraftReviewController::class, 'reorder']);
     Route::post('drafts/{draft}/publish', [DraftReviewController::class, 'publish']);
+
+    Route::get('grading/queue', [GradingController::class, 'queue']);
+    Route::post('grading/bulk-accept', [GradingController::class, 'bulkAccept']);
+    Route::post('grading/{suggestion}/decide', [GradingController::class, 'decide'])->whereNumber('suggestion');
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('exam-questions/{question}/rubric', [QuestionRubricController::class, 'show']);
+    Route::put('exam-questions/{question}/rubric', [QuestionRubricController::class, 'update']);
+    Route::get('exam-sessions/{session}/result', [SessionResultController::class, 'show']);
 });
