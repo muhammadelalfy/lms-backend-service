@@ -21,8 +21,9 @@
     try { data = JSON.parse(dataEl.textContent); } catch (e) { data = { plans: [], reserved_slugs: [] }; }
     var plans = {};
     (data.plans || []).forEach(function (p) { plans[p.slug] = p; });
-    var nf = new Intl.NumberFormat('en-US');
+    var nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
     var state = { tab: 'center', billing: 'monthly' };
+    var tabListeners = []; // the calculator follows the active tab
 
     // ---- tabs --------------------------------------------------------------------------------------
     var tabs = Array.prototype.slice.call(root.querySelectorAll('.pr-tab'));
@@ -45,6 +46,7 @@
             if (on && focus) t.focus({ preventScroll: true });
         });
         panels.forEach(function (p) { p.classList.toggle('is-active', p.getAttribute('data-audience') === key); });
+        tabListeners.forEach(function (fn) { fn(key); });
         if (!silent) track('pricing_tab_change', { tab: key });
     }
     tabs.forEach(function (t, i) {
@@ -97,6 +99,304 @@
     Array.prototype.forEach.call(root.querySelectorAll('.pr-scroll'), function (s) {
         s.addEventListener('scroll', function once() { s.removeEventListener('scroll', once); track('comparison_scroll'); }, { passive: true });
     });
+
+    // ---- add-on calculator -------------------------------------------------------------------------
+    // An estimate from the rates the server embedded, with the spec formula:
+    //   total_list = plan.list + extra_students × rate.student + extra_storage_gb × rate.storage_gb
+    //   total_shown = round(total_list × (1 − promo%/100)); yearly = total_shown × yearly_months_billed.
+    // The plan itself is activated by the operator; nothing here decides what a center pays.
+    var STORAGE_MAX = 2000;
+    var LAST_TIER_EXTRA = 5000;
+    var ordered = (data.plans || []).slice().sort(function (a, b) { return a.tier - b.tier; });
+    var audiences = {};
+    (data.audiences || []).forEach(function (a) { audiences[a.key] = a; });
+    var calcEl = document.getElementById('pr-calc');
+    var calc = calcEl && data.addons ? (function () {
+        var $ = function (id) { return document.getElementById(id); };
+        var el = {
+            plan: $('pc-plan'), st: $('pc-students'), stRange: $('pc-students-range'), stHelp: $('pc-students-help'),
+            gb: $('pc-storage'), gbRange: $('pc-storage-range'), gbHelp: $('pc-storage-help'),
+            baseName: $('pc-base-name'), base: $('pc-base'), stCalc: $('pc-st-calc'), stCost: $('pc-st'),
+            gbCalc: $('pc-gb-calc'), gbCost: $('pc-gb'), list: $('pc-list'), off: $('pc-off'),
+            monthly: $('pc-monthly'), yearly: $('pc-yearly'), hint: $('pc-hint'), hintText: $('pc-hint-text'),
+            hintCta: $('pc-hint-cta'), cta: $('pc-cta')
+        };
+        var rateSt = Number(data.addons.extra_student.list);
+        var rateGb = Number(data.addons.extra_storage_gb.list);
+        var pct = data.promo && data.promo.active ? Number(data.promo.percent) : 0;
+        var trackTimer = null;
+
+        function nextOf(slug) {
+            var p = plans[slug];
+            for (var i = 0; i < ordered.length; i++) if (ordered[i].tier > p.tier) return ordered[i];
+            return null;
+        }
+        function maxExtra(slug) {
+            var p = plans[slug], n = nextOf(slug);
+            if (n && n.limits.students != null && p.limits.students != null) return n.limits.students - p.limits.students;
+            return LAST_TIER_EXTRA;
+        }
+        function intOf(input) {
+            var v = parseInt(input.value, 10);
+            return isNaN(v) ? 0 : v;
+        }
+        function stHelp(slug, clamped) {
+            var p = plans[slug], max = maxExtra(slug), more = nextOf(slug);
+            el.stHelp.classList.toggle('is-warn', clamped);
+            el.stHelp.textContent = clamped
+                ? 'أقصى زيادة في باقة ' + p.name + ' هي ' + nf.format(max) + ' طالب، لأن بعدها ' + (more ? 'باقة ' + more.name + ' أوفر لك' : 'الأنسب باقة مخصصة') + '.'
+                : 'حتى ' + nf.format(max) + ' طالب إضافي في باقة ' + p.name + '، بـ' + nf.format(rateSt) + ' جنيه للطالب في الشهر.';
+        }
+        function gbHelp(clamped) {
+            el.gbHelp.classList.toggle('is-warn', clamped);
+            el.gbHelp.textContent = clamped
+                ? 'أقصى مساحة إضافية ' + nf.format(STORAGE_MAX) + ' جيجا. لو محتاج أكتر اطلب باقة مخصصة.'
+                : 'حتى ' + nf.format(STORAGE_MAX) + ' جيجا، بـ' + nf.format(rateGb) + ' جنيه للجيجا في الشهر.';
+        }
+        // Keep a number field inside [0, max]. Returns whether to explain the limit: it had to be cut down just now, or
+        // the explanation is already showing and the value still sits at the limit.
+        function clamp(input, range, max, rewriteEmpty, help) {
+            var v = intOf(input), cut = v > max || (help.classList.contains('is-warn') && v === max);
+            v = Math.max(0, Math.min(max, v));
+            if (v > max || input.value.trim() !== '' || rewriteEmpty) {
+                if (String(v) !== input.value) input.value = String(v);
+            }
+            range.max = String(max); input.max = String(max);
+            range.value = String(v);
+            return cut;
+        }
+
+        function render() {
+            var slug = el.plan.value, p = plans[slug];
+            if (!p) return null;
+            var es = intOf(el.st), eg = intOf(el.gb);
+            var stCost = es * rateSt, gbCost = eg * rateGb;
+            var totalList = p.price.list_monthly + stCost + gbCost;
+            var shown = Math.round(totalList * (100 - pct) / 100 + 1e-9);
+            var yearly = shown * data.yearly_months_billed;
+
+            el.baseName.textContent = p.name;
+            el.base.textContent = nf.format(p.price.list_monthly);
+            el.stCalc.textContent = '(' + nf.format(es) + ' × ' + nf.format(rateSt) + ')';
+            el.stCost.textContent = nf.format(stCost);
+            el.gbCalc.textContent = '(' + nf.format(eg) + ' × ' + nf.format(rateGb) + ')';
+            el.gbCost.textContent = nf.format(gbCost);
+            if (el.list) el.list.textContent = nf.format(totalList);
+            if (el.off) el.off.textContent = nf.format(Math.round((totalList - shown) * 100) / 100);
+            el.monthly.textContent = nf.format(shown);
+            el.yearly.textContent = nf.format(yearly);
+            el.cta.setAttribute('data-plan', slug);
+
+            var next = nextOf(slug);
+            var better = next && shown >= next.price.shown_monthly;
+            el.hint.hidden = !better;
+            if (better) {
+                el.hintText.textContent = 'باقة ' + next.name + ' بـ' + nf.format(next.price.shown_monthly) + ' جنيه / شهر، وفيها حتى '
+                    + nf.format(next.limits.students) + ' طالب و' + nf.format(next.limits.storage_gb) + ' جيجا تخزين.';
+                el.hintCta.textContent = 'ابدأ بباقة ' + next.name;
+                el.hintCta.setAttribute('data-plan', next.slug);
+            }
+            return { plan: slug, extra_students: es, extra_storage_gb: eg };
+        }
+        function changed(fromUser) {
+            var props = render();
+            if (!fromUser || !props) return;
+            clearTimeout(trackTimer);
+            trackTimer = setTimeout(function () { track('calculator_change', props); }, 800);
+        }
+
+        function onStudents(input, finalize) {
+            if (input === el.stRange) el.st.value = el.stRange.value;
+            stHelp(el.plan.value, clamp(el.st, el.stRange, maxExtra(el.plan.value), finalize, el.stHelp));
+            changed(true);
+        }
+        function onStorage(input, finalize) {
+            if (input === el.gbRange) el.gb.value = el.gbRange.value;
+            gbHelp(clamp(el.gb, el.gbRange, STORAGE_MAX, finalize, el.gbHelp));
+            changed(true);
+        }
+        el.st.addEventListener('input', function () { onStudents(el.st, false); });
+        el.st.addEventListener('change', function () { onStudents(el.st, true); });
+        el.stRange.addEventListener('input', function () { onStudents(el.stRange, true); });
+        el.gb.addEventListener('input', function () { onStorage(el.gb, false); });
+        el.gb.addEventListener('change', function () { onStorage(el.gb, true); });
+        el.gbRange.addEventListener('input', function () { onStorage(el.gbRange, true); });
+        el.plan.addEventListener('change', function () { onStudents(el.st, true); });
+        document.getElementById('pr-calc-form').addEventListener('submit', function (e) { e.preventDefault(); });
+        el.hintCta.addEventListener('click', function () { track('calculator_upgrade_hint_click'); });
+
+        // The plan list is the active tab's plans; keep the chosen plan when the new tab has it.
+        function setAudience(key) {
+            var a = audiences[key];
+            if (!a) return;
+            var current = el.plan.value;
+            var keep = a.plans.indexOf(current) !== -1 ? current : a.recommended;
+            el.plan.innerHTML = '';
+            a.plans.forEach(function (slug) {
+                var p = plans[slug];
+                if (!p) return;
+                var o = document.createElement('option');
+                o.value = slug;
+                o.textContent = p.name + ' — حتى ' + nf.format(p.limits.students) + ' طالب';
+                el.plan.appendChild(o);
+            });
+            el.plan.value = keep;
+            stHelp(keep, clamp(el.st, el.stRange, maxExtra(keep), true, el.stHelp));
+            changed(false);
+        }
+        tabListeners.push(setAudience);
+        setAudience(state.tab);
+        gbHelp(false);
+
+        return {
+            summary: function () {
+                var p = plans[el.plan.value], es = intOf(el.st), eg = intOf(el.gb);
+                if (!p) return { plan: '', text: '' };
+                var parts = ['باقة ' + p.name];
+                if (es) parts.push(nf.format(es) + ' طالب إضافي');
+                if (eg) parts.push(nf.format(eg) + ' جيجا تخزين إضافية');
+                return { plan: p.slug, text: parts.length > 1 ? 'محتاج ' + parts.join(' + ') + '.' : '' };
+            }
+        };
+    })() : null;
+
+    // ---- custom-plan request (POST /api/plan-requests) ---------------------------------------------
+    var crDialog = document.getElementById('custom-dialog');
+    if (crDialog && typeof crDialog.showModal === 'function') (function () {
+        var form = document.getElementById('custom-form');
+        var done = document.getElementById('custom-done');
+        var status = document.getElementById('custom-status');
+        var go = form.querySelector('.school-go');
+        var count = document.getElementById('cr-message-count');
+        var f = form.elements;
+        var opener = null;
+        var PHONE = /^(?:(?:\+?20|0)?1[0125]\d{8}|\+\d{8,15})$/;
+        var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        var fields = { name: 'cr-name', phone: 'cr-phone', email: 'cr-email', org_name: 'cr-org', audience: 'cr-audience', students_estimate: 'cr-students', message: 'cr-message' };
+        var MSG = {
+            name: 'اكتب اسمك (حرفين على الأقل).',
+            phone: 'اكتب رقم موبايل صحيح.',
+            email: 'البريد الإلكتروني غير صحيح.',
+            org: 'اسم المركز طويل، الحد الأقصى 120 حرف.',
+            audience: 'اختار نوع نشاطك.',
+            students: 'عدد الطلاب لازم يكون رقم صحيح.',
+            msgShort: 'اوصف احتياجك في 10 حروف على الأقل.',
+            msgLong: 'الوصف طويل، الحد الأقصى 800 حرف.',
+            links: 'ماينفعش أكتر من رابطين في الرسالة.',
+            throttle: 'طلبات كتير في وقت قصير، جرّب بعد شوية.',
+            offline: 'تعذّر الاتصال. تحقق من الإنترنت وحاول مرة أخرى.',
+            generic: 'حصلت مشكلة، جرّب تاني بعد شوية.',
+            ok: 'وصلنا طلبك. هنكلمك على الموبايل في أقرب وقت.'
+        };
+
+        function say(text, kind) { status.textContent = text; status.className = 'school-status' + (kind ? ' is-' + kind : ''); }
+        function busy(on) { go.setAttribute('aria-busy', String(on)); go.disabled = on; }
+        function setErr(name, text) {
+            var input = document.getElementById(fields[name]);
+            var msg = document.getElementById(fields[name] + '-err');
+            if (!input || !msg) return false;
+            msg.textContent = text || '';
+            if (text) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid');
+            return true;
+        }
+        function clearErrors() { Object.keys(fields).forEach(function (k) { setErr(k, ''); }); say(''); }
+        function showErrors(errors) {
+            var general = [];
+            Object.keys(errors).forEach(function (k) { if (!setErr(k, errors[k][0])) general.push(errors[k][0]); });
+            if (general.length) say(general[0], 'error');
+            var bad = form.querySelector('[aria-invalid="true"]');
+            if (bad) bad.focus();
+        }
+        function updateCount() { count.textContent = nf.format(f.message.value.length) + ' / 800'; }
+        f.message.addEventListener('input', updateCount);
+        Object.keys(fields).forEach(function (k) {
+            f[k].addEventListener('input', function () { if (f[k].getAttribute('aria-invalid')) setErr(k, ''); });
+        });
+
+        function open(source, el) {
+            clearErrors();
+            form.hidden = false; done.hidden = true;
+            if (audiences[state.tab]) f.audience.value = state.tab;
+            f.plan_slug.value = '';
+            if (source === 'calculator' && calc) {
+                var s = calc.summary();
+                f.plan_slug.value = s.plan;
+                if (s.text && !f.message.value.trim()) f.message.value = s.text;
+            }
+            updateCount();
+            opener = el || null;
+            if (!crDialog.open) crDialog.showModal();
+            f.name.focus();
+            track('custom_request_open', { source: source });
+        }
+        crDialog.addEventListener('close', function () {
+            if (opener && document.contains(opener)) opener.focus();
+            opener = null;
+        });
+        crDialog.addEventListener('click', function (e) {
+            if (e.target === crDialog || e.target.closest('[data-close-custom]')) crDialog.close();
+        });
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-custom-request]');
+            if (!btn) return;
+            e.preventDefault();
+            open(btn.getAttribute('data-source') || 'card', btn);
+        });
+
+        function validate() {
+            var e = {};
+            var name = f.name.value.trim(), phone = f.phone.value.replace(/[\s\-().]/g, ''), email = f.email.value.trim();
+            var msg = f.message.value.trim(), students = f.students_estimate.value.trim();
+            if (name.length < 2 || name.length > 80) e.name = [MSG.name];
+            if (!PHONE.test(phone)) e.phone = [MSG.phone];
+            if (email && !EMAIL.test(email)) e.email = [MSG.email];
+            if (f.org_name.value.trim().length > 120) e.org_name = [MSG.org];
+            if (!audiences[f.audience.value]) e.audience = [MSG.audience];
+            if (students && !(/^\d+$/.test(students) && +students >= 1 && +students <= 1000000)) e.students_estimate = [MSG.students];
+            if (msg.length < 10) e.message = [MSG.msgShort];
+            else if (msg.length > 800) e.message = [MSG.msgLong];
+            else if ((msg.match(/(?:https?:\/\/|www\.)/gi) || []).length > 2) e.message = [MSG.links];
+            return e;
+        }
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            clearErrors();
+            var local = validate();
+            if (Object.keys(local).length) { showErrors(local); return; }
+            var opt = function (v) { v = v.trim(); return v === '' ? undefined : v; };
+            busy(true);
+            say('جارٍ إرسال طلبك…');
+            track('custom_request_submit');
+            fetch('/api/plan-requests', {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: f.name.value.trim(), phone: f.phone.value.trim(), email: opt(f.email.value),
+                    org_name: opt(f.org_name.value), audience: f.audience.value,
+                    students_estimate: f.students_estimate.value.trim() ? Number(f.students_estimate.value) : undefined,
+                    plan_slug: opt(f.plan_slug.value), message: f.message.value.trim(), website: f.website.value
+                })
+            })
+                .then(function (res) { return res.json().catch(function () { return {}; }).then(function (body) { return { ok: res.ok, status: res.status, body: body }; }); })
+                .then(function (r) {
+                    busy(false);
+                    if (r.ok) {
+                        track('custom_request_success');
+                        form.reset(); updateCount(); say('');
+                        document.getElementById('custom-done-text').textContent = r.body.message || MSG.ok;
+                        form.hidden = true; done.hidden = false;
+                        document.getElementById('custom-done-title').focus();
+                        return;
+                    }
+                    track('custom_request_error', { status: r.status });
+                    if (r.status === 429) { say(r.body.message || MSG.throttle, 'error'); return; }
+                    if (r.status === 422 && r.body.errors) { say(''); showErrors(r.body.errors); return; }
+                    say(MSG.generic, 'error');
+                })
+                .catch(function () { busy(false); track('custom_request_error', { status: 0 }); say(MSG.offline, 'error'); });
+        });
+    })();
 
     // ---- sign-up dialog ----------------------------------------------------------------------------
     var dialog = document.getElementById('signup-dialog');
@@ -183,7 +483,7 @@
     root.addEventListener('click', function (e) {
         var cta = e.target.closest('[data-signup]');
         if (!cta) return;
-        var panel = cta.closest('.pr-panel');
+        var panel = cta.closest('.pr-panel') || root.querySelector('.pr-panel.is-active'); // calculator: the active tab
         track('pricing_cta_click', { plan: cta.getAttribute('data-plan'), tab: state.tab, billing: state.billing, kind: cta.getAttribute('data-kind-of-card') });
         if (!canModal) return; // old browser: the link (mailto) still works
         e.preventDefault();
