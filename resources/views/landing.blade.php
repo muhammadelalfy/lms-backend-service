@@ -167,6 +167,8 @@
         .download h2 { margin: 0 0 10px; font-size: 32px; }
         .download p { color: var(--muted); margin: 0 auto 26px; max-width: 54ch; }
         .download .cta { justify-content: center; }
+        .download .download-meta { margin: 18px auto 0; font-size: 15px; }
+        .download .download-meta a { color: inherit; text-decoration: underline; }
         .btn-navy { background: var(--navy-800); color: #fff; }
         .btn-navy:hover { background: var(--navy-600); }
 
@@ -205,6 +207,9 @@
 @php
     $name = config('landing.name');
     $android = config('landing.android_url');
+    // An APK published on this server wins over a configured store link.
+    $androidRelease = \App\Support\AndroidRelease::fromConfig()->summary();
+    $mb = fn (int $bytes) => number_format($bytes / 1048576).' MB';
     $ios = config('landing.ios_url');
     $web = config('landing.web_url');
     $email = config('landing.contact_email');
@@ -402,7 +407,11 @@
                 <h2>حمّل تطبيق {{ $name }}</h2>
                 <p>أدخل رمز مركزك بعد التثبيت وسجّل الدخول بحسابك.</p>
                 <div class="cta">
-                    @if ($android)
+                    @if ($androidRelease && isset($androidRelease['files']['arm64']))
+                        <a class="btn btn-navy" href="{{ url('/download/android') }}" download>أندرويد</a>
+                    @elseif ($androidRelease)
+                        <a class="btn btn-navy" href="{{ url('/download/android?abi=armv7') }}" download>أندرويد</a>
+                    @elseif ($android)
                         <a class="btn btn-navy" href="{{ $android }}" rel="noopener">أندرويد</a>
                     @else
                         <span class="btn btn-navy" aria-disabled="true">أندرويد — قريباً</span>
@@ -414,6 +423,14 @@
                     @endif
                     @include('landing._enter', ['class' => 'btn btn-gold', 'label' => 'الدخول من المتصفح'])
                 </div>
+                @if ($androidRelease)
+                    <p class="download-meta">
+                        أندرويد{{ $androidRelease['version_name'] ? ' · الإصدار '.$androidRelease['version_name'] : '' }}{{ isset($androidRelease['files']['arm64']) ? ' · '.$mb($androidRelease['files']['arm64']['size']) : '' }}
+                        @if (isset($androidRelease['files']['armv7']) && isset($androidRelease['files']['arm64']))
+                            · <a href="{{ url('/download/android?abi=armv7') }}" download>لأجهزة أقدم (32-bit)</a>
+                        @endif
+                    </p>
+                @endif
             </div>
         </div>
     </section>
