@@ -16,4 +16,6 @@ return [
     'ios_url' => env('LANDING_IOS_URL', ''),
     'web_url' => env('LANDING_WEB_URL', ''),
     'contact_email' => env('LANDING_CONTACT_EMAIL', ''),
+    // Where the Android APKs and latest.json live (persistent storage volume; served by /download/android).
+    'downloads_dir' => env('LANDING_DOWNLOADS_DIR', storage_path('app/public/downloads')),
 ];
