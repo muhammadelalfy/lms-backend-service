@@ -16,6 +16,7 @@ class AndroidDownloadTest extends TestCase
     {
         parent::setUp();
         Cache::flush();
+        @mkdir(storage_path('framework/testing'), 0775, true);
         $this->dir = storage_path('framework/testing/downloads-'.bin2hex(random_bytes(4)));
         config(['landing.downloads_dir' => $this->dir]);
     }
