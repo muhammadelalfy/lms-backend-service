@@ -22,7 +22,7 @@ class Material extends Model
 
     protected $fillable = [
         'owner_user_id', 'title', 'original_name', 'kind', 'mime', 'size_bytes', 'storage_path', 'sha256',
-        'excel_mode', 'embed_model',
+        'excel_mode', 'embed_model', 'size_original',
     ];
 
     protected function casts(): array
@@ -36,6 +36,8 @@ class Material extends Model
             'sheets_count' => 'integer',
             'char_count' => 'integer',
             'ingest_version' => 'integer',
+            'size_original' => 'integer',
+            'original_removed' => 'boolean',
             'needs_text_review' => 'boolean',
         ];
     }

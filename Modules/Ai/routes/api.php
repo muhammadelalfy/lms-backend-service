@@ -7,11 +7,21 @@ use Modules\Ai\Http\Controllers\DraftReviewController;
 use Modules\Ai\Http\Controllers\GenerationJobController;
 use Modules\Ai\Http\Controllers\GradingController;
 use Modules\Ai\Http\Controllers\MaterialController;
+use Modules\Ai\Http\Controllers\MaterialUploadController;
 use Modules\Ai\Http\Controllers\QuestionRubricController;
 use Modules\Ai\Http\Controllers\SessionResultController;
 use Modules\Ai\Http\Controllers\UsageController;
 
 Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
+    // Chunked, resumable upload (declared before materials/{material}). The chunk route is throttled apart:
+    // a 100 MB file is about 20 pieces, and a retrying client must not be locked out by the default limit.
+    Route::post('materials/uploads', [MaterialUploadController::class, 'start'])->middleware('throttle:ai-upload-start');
+    Route::get('materials/uploads/{upload}', [MaterialUploadController::class, 'show']);
+    Route::put('materials/uploads/{upload}/chunks/{index}', [MaterialUploadController::class, 'chunk'])
+        ->whereNumber('index')->middleware('throttle:ai-upload-chunks');
+    Route::post('materials/uploads/{upload}/complete', [MaterialUploadController::class, 'complete'])->middleware('throttle:ai-upload-start');
+    Route::delete('materials/uploads/{upload}', [MaterialUploadController::class, 'abort']);
+
     Route::get('materials', [MaterialController::class, 'index']);
     Route::post('materials', [MaterialController::class, 'store']);
     Route::get('materials/{material}', [MaterialController::class, 'show']);

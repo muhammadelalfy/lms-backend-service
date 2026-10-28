@@ -95,6 +95,7 @@ services:
     deploy: { resources: { limits: { memory: 512m } } }
     depends_on:
       ai-db: { condition: service_healthy }
+      pdf-extractor: { condition: service_healthy }
       redis: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3)"]
@@ -102,6 +103,34 @@ services:
       timeout: 5s
       retries: 6
       start_period: 30s
+    logging: *logging
+
+  # Turns a PDF into light JSON (text per page) with pdf2json. Internal only; the AI service streams the
+  # file to it and it deletes its temp copy at once. pdf2json holds a whole document in memory, so the
+  # container is capped: NODE_OPTIONS and EXTRACTOR_WORKER_HEAP_MB stay below mem_limit.
+  pdf-extractor:
+    profiles: [ai]
+    image: ${PDF_EXTRACTOR_IMAGE:-ghcr.io/muhammadelalfy/lms-pdf-extractor:latest}
+    environment:
+      EXTRACTOR_TOKEN: ${PDF_EXTRACTOR_TOKEN:-}  # empty = the extractor refuses to start; make-ai-env.sh writes it
+      NODE_OPTIONS: --max-old-space-size=512
+      EXTRACTOR_WORKER_HEAP_MB: "512"
+      EXTRACTOR_MAX_BYTES: "157286400"
+      EXTRACTOR_MAX_PAGES: "600"
+      EXTRACTOR_MAX_CONCURRENT: "1"
+    restart: unless-stopped
+    expose: ["8002"]
+    mem_limit: 768m
+    read_only: true
+    # Uploads are written to this volume (disk), never held in RAM; the service deletes each file when done.
+    tmpfs: ["/tmp:size=16m"]
+    volumes: [extract-tmp:/tmp/extract]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8002/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
     logging: *logging
 
   ai-db:
@@ -123,8 +152,8 @@ services:
   ai-worker:
     <<: *app
     profiles: [ai]
-    command: ["php", "artisan", "queue:work", "redis", "--queue=ai", "--sleep=2", "--tries=3", "--timeout=170", "--max-time=3600"]
-    stop_grace_period: 180s
+    command: ["php", "artisan", "queue:work", "redis", "--queue=ai", "--sleep=2", "--tries=3", "--timeout=340", "--max-time=3600"]
+    stop_grace_period: 340s
     deploy: { resources: { limits: { memory: 256m } } }
     healthcheck: { test: ["CMD-SHELL", "kill -0 1"], interval: 30s }
 
@@ -163,3 +192,4 @@ volumes:
   storage: {}
   redis: {}
   ai-db: {}
+  extract-tmp: {}

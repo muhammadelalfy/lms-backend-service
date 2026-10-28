@@ -21,6 +21,8 @@ class MaterialResource extends JsonResource
             'kind' => $this->kind->value,
             'mime' => $this->mime,
             'size_bytes' => $this->size_bytes,
+            'size_original' => $this->size_original ?? $this->size_bytes,
+            'original_removed' => $this->original_removed,
             'status' => $this->status->value,
             'failure_reason' => $this->failure_reason,
             'failure_message' => FailureReason::message($this->failure_reason),

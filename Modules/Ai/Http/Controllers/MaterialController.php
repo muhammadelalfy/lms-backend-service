@@ -66,7 +66,7 @@ class MaterialController extends Controller
     public function download(MaterialRequest $request, Material $material)
     {
         $disk = Storage::disk((string) config('ai.disk'));
-        abort_if($material->storage_path === null || ! $disk->exists($material->storage_path), 404);
+        abort_if($material->storage_path === null || ! $disk->exists($material->storage_path), 404, $material->original_removed ? 'الملف الأصلي لا يُحفظ بعد المعالجة؛ المحفوظ هو النص المستخرج فقط.' : 'الملف غير موجود.');
 
         return $disk->download($material->storage_path, $material->original_name);
     }

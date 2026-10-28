@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Rolls the AI service to one image and checks it; puts the previous image back when it is not healthy.
-#   ./deploy-ai.sh ghcr.io/<owner>/lms-ai-service:<tag>
+#   ./deploy-ai.sh ghcr.io/<owner>/lms-ai-service:<tag> [ghcr.io/<owner>/lms-pdf-extractor:<tag>]
 # The AI service is optional and isolated: a failure here never touches the API, web or load balancer.
 set -euo pipefail
 cd "$(dirname "$0")"
 image="${1:?AI image reference}"
+extractor_image="${2:-ghcr.io/muhammadelalfy/lms-pdf-extractor:latest}"
 
 ./make-ai-env.sh
 touch .env
@@ -25,8 +26,12 @@ healthy() {
 }
 
 set_image "$image"
-log "pulling $image"
-docker compose --profile ai pull --quiet lms-ai
+grep -q '^PDF_EXTRACTOR_IMAGE=' .env && sed -i "s|^PDF_EXTRACTOR_IMAGE=.*|PDF_EXTRACTOR_IMAGE=$extractor_image|" .env || echo "PDF_EXTRACTOR_IMAGE=$extractor_image" >> .env
+export PDF_EXTRACTOR_IMAGE="$extractor_image"
+log "pulling $image and $extractor_image"
+docker compose --profile ai pull --quiet lms-ai pdf-extractor
+log "starting the PDF extractor"
+docker compose --profile ai up -d --no-deps --wait --wait-timeout 90 pdf-extractor
 log "starting the AI database and service"
 docker compose --profile ai up -d --no-deps --wait ai-db
 if docker compose --profile ai up -d --no-deps --force-recreate --wait --wait-timeout 120 lms-ai && healthy; then

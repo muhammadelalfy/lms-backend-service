@@ -9,6 +9,10 @@ on:
         description: "AI service image to roll out (default: the latest published one)"
         required: false
         default: ghcr.io/muhammadelalfy/lms-ai-service:latest
+      extractor_image:
+        description: "PDF extractor (pdf2json) image to roll out with it"
+        required: false
+        default: ghcr.io/muhammadelalfy/lms-pdf-extractor:latest
 
 permissions:
   contents: read
@@ -207,6 +211,6 @@ jobs:
           target="${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
           echo "${{ secrets.GITHUB_TOKEN }}" | ssh "$target" "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
           status=0
-          ssh "$target" "/opt/mudarisy/deploy-ai.sh '${{ inputs.ai_image }}'" || status=$?
+          ssh "$target" "/opt/mudarisy/deploy-ai.sh '${{ inputs.ai_image }}' '${{ inputs.extractor_image }}'" || status=$?
           ssh "$target" "docker logout ghcr.io" || true
           exit $status
