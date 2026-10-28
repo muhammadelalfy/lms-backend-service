@@ -112,7 +112,7 @@ services:
     profiles: [ai]
     image: ${PDF_EXTRACTOR_IMAGE:-ghcr.io/muhammadelalfy/lms-pdf-extractor:latest}
     environment:
-      EXTRACTOR_TOKEN: ${PDF_EXTRACTOR_TOKEN:?set PDF_EXTRACTOR_TOKEN (make-ai-env.sh writes it)}
+      EXTRACTOR_TOKEN: ${PDF_EXTRACTOR_TOKEN:-}  # empty = the extractor refuses to start; make-ai-env.sh writes it
       NODE_OPTIONS: --max-old-space-size=512
       EXTRACTOR_WORKER_HEAP_MB: "512"
       EXTRACTOR_MAX_BYTES: "157286400"
